@@ -498,6 +498,71 @@ input:focus,textarea:focus{border-color:var(--sys);outline:none;box-shadow:0 0 0
 .logx{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--gold);flex:none;font-variant-numeric:tabular-nums}
 .empty{text-align:center;color:var(--dimmer);font-size:12.5px;padding:22px 10px;font-family:"IBM Plex Mono",monospace;letter-spacing:.05em}
 
+/* ---------- sessione guidata ---------- */
+body.bloccato{overflow:hidden}
+.guida{
+  position:fixed;inset:0;z-index:70;display:none;
+  background:var(--void);
+  background-image:
+    radial-gradient(120% 60% at 50% 0%, var(--tint), transparent 60%),
+    radial-gradient(var(--tone) 1px, transparent 1px);
+  background-size:auto, 4px 4px;
+}
+.guida.on{display:block}
+.guida-in{
+  height:100%;height:100dvh;display:flex;flex-direction:column;
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+  max-width:520px;margin:0 auto;
+}
+.g-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.g-esci{
+  width:40px;height:40px;flex:none;display:grid;place-items:center;
+  border:1px solid var(--line);color:var(--dim);font-size:16px;
+}
+.g-esci:hover{color:var(--txt);border-color:var(--dim)}
+.g-barra{height:4px;background:var(--well);border:1px solid var(--line-soft);margin:10px 0 0;flex:none}
+.g-barra div{height:100%;background:var(--sys);transition:width .4s ease}
+.g-centro{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;text-align:center;overflow-y:auto;padding:14px 0;
+}
+.g-nome{
+  font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:27px;line-height:1.1;
+  text-wrap:balance;
+}
+.g-target{
+  font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
+  font-size:92px;line-height:.85;color:var(--sys);transform:skewX(-6deg);
+  display:flex;align-items:baseline;gap:10px;
+}
+.g-target span{
+  font-family:"IBM Plex Mono",monospace;font-weight:400;font-size:12px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transform:skewX(6deg);
+}
+.g-tip{font-size:13px;line-height:1.5;color:var(--dim);max-width:34em}
+.g-next{font-size:13px;color:var(--dim)}
+.g-next strong{color:var(--txt);font-family:"Chakra Petch",sans-serif}
+.g-mob{
+  font-size:13px;color:var(--ok);border:1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  padding:8px 14px;
+}
+.g-cerchio{position:relative;width:170px;height:170px;display:grid;place-items:center}
+.g-cerchio svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.g-tr{fill:none;stroke:var(--line-soft);stroke-width:7}
+.g-fr{fill:none;stroke:var(--sys);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.g-num{
+  font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
+  font-size:60px;color:var(--txt);font-variant-numeric:tabular-nums;transform:skewX(-6deg);
+}
+.g-azioni{flex:none;display:flex;flex-direction:column;gap:8px}
+.g-azioni .btn{width:100%}
+.g-azioni .btn.sm{width:100%}
+@media(min-width:420px){
+  .g-azioni{flex-direction:row;flex-wrap:wrap}
+  .g-azioni .btn{flex:1 1 100%}
+  .g-azioni .btn.sm{flex:1 1 0}
+}
+
 /* ---------- modal / system notification ---------- */
 .ov{
   position:fixed;inset:0;z-index:80;display:none;
@@ -749,6 +814,7 @@ input:focus,textarea:focus{border-color:var(--sys);outline:none;box-shadow:0 0 0
         <div class="lbl mono" style="margin-top:7px" id="trCount">0 / 0 serie</div>
       </div>
       <div class="stack" style="gap:10px" id="exList"></div>
+      <button class="btn" id="btnGuida" style="margin-bottom:2px">Avvia sessione guidata</button>
       <button class="btn gold" id="btnFinish">Completa sessione</button>
       <button class="btn ghost sm" id="btnReset" style="width:100%;margin-bottom:10px">Azzera serie</button>
     </div>
@@ -866,11 +932,13 @@ input:focus,textarea:focus{border-color:var(--sys);outline:none;box-shadow:0 0 0
   <button class="nb" data-v="sheet"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 8v8M8.5 10.2v3.6M15.5 10.2v3.6"/></svg>Scheda</button>
 </nav>
 
+<div class="guida" id="guida"><div class="guida-in" id="guidaBox"></div></div>
+
 <div class="ov" id="ov"><div class="sysbox" id="ovBox"></div></div>
 
 <script>
 "use strict";
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.2.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -883,7 +951,7 @@ const PROG = {
     name:"Protocollo Ombra",
     tag:"Dimagrimento",
     desc:"Circuiti metabolici ad alta densità. Recuperi brevi, frequenza cardiaca alta, massimo dispendio calorico in 30–40 minuti.",
-    rules:"Esegui gli esercizi in CIRCUITO: una serie per esercizio, poi ripeti dall'inizio. Recupero solo tra un giro e l'altro. Se il fiato manca, rallenta il ritmo ma non fermarti. Obiettivo: finire il circuito, non essere perfetto.",
+    rules:"Esegui gli esercizi in CIRCUITO: una serie per esercizio, poi ripeti dall'inizio. Fra un esercizio e l'altro solo il tempo di riposizionarti; il recupero pieno arriva a fine giro. Se il fiato manca, rallenta il ritmo ma non fermarti. Obiettivo: finire il circuito, non essere perfetto.",
     rest:{E:75,C:60,S:45},
     days:[
       {n:"Combustione Totale", d:"Full body · circuito", sets:{E:3,C:4,S:5}, ex:[
@@ -1049,17 +1117,17 @@ const ALT = {
     caviglie:["Marcia sul posto",[45,60,75],"s","Elimina l'impatto ripetuto."],
     cardio:["Marcia sul posto",[45,60,75],"s","Ritmo che ti lascia respirare dal naso."]},
   "Crunch":{
-    collo:["Dead bug",[12,16,20],null,"Per lato. Zero flessione cervicale: la testa resta appoggiata a terra."],
-    schiena:["Dead bug",[12,16,20],null,"Per lato. Stesso core senza flettere ripetutamente la colonna."]},
+    collo:["Curl-up di McGill",[10,14,18],null,"Una gamba piegata, mani sotto la lombare: sollevi solo testa e spalle di pochi centimetri, senza tirare col collo."],
+    schiena:["Curl-up di McGill",[10,14,18],null,"Mani sotto la lombare a sostenere la curva: addome attivo senza flettere la colonna."]},
   "Russian twist":{
-    schiena:["Plank laterale sulle ginocchia",[20,30,40],"s","Per lato. Obliqui in isometria, senza torsione caricata della lombare."],
+    schiena:["Pallof press con asciugamano",[10,14,18],null,"Per lato. Asciugamano teso fra le mani, spingi in avanti resistendo alla rotazione: obliqui senza torcere la lombare."],
     polsi:["Plank laterale sul gomito",[20,30,40],"s","Per lato."]},
   "Hollow hold":{
     schiena:["Dead bug lento",[10,14,18],null,"Per lato. Stessa attivazione con la lombare sempre a contatto col pavimento."],
     collo:["Hollow hold con testa appoggiata",[20,30,45],"s","Solo braccia e gambe sollevate: la testa resta a terra."]},
   "Bicycle crunch":{
-    collo:["Dead bug",[12,18,24],null,"Per lato. Nessuna trazione sul collo."],
-    schiena:["Dead bug",[12,18,24],null,"Per lato."]},
+    collo:["Marcia da supino",[14,20,26],null,"Per lato. Testa a terra, alterni le ginocchia al petto senza staccare le spalle."],
+    schiena:["Marcia da supino",[14,20,26],null,"Per lato. Lombare sempre a contatto col pavimento, ritmo lento."]},
   "Plank laterale":{
     polsi:["Plank laterale sul gomito",[20,30,45],"s","Per lato. Gomito sotto la spalla."],
     spalle:["Plank laterale sulle ginocchia",[20,30,45],"s","Per lato. Riduce il carico sulla spalla d'appoggio."]},
@@ -1073,7 +1141,7 @@ const ALT = {
     spalle:["Push-up inclinato presa media",[10,14,18],null,"Mani sul bordo di un tavolo, gomiti a 45°: la presa larga è la più aggressiva per la spalla."],
     polsi:["Push-up sui pugni",[8,12,16],null,"Polso dritto, nessuna estensione."]},
   "Pike push-up":{
-    spalle:["Push-up inclinato al muro",[12,16,20],null,"La spinta sopra la testa è la posizione più critica per la spalla: qui la spinta resta orizzontale."],
+    spalle:["Push-up inclinato a gomiti stretti",[10,14,18],null,"Mani sul bordo di un tavolo, gomiti aderenti: la spinta sopra la testa è la posizione più critica per la cuffia."],
     collo:["Push-up inclinato al muro",[12,16,20],null,"Nessun carico con la testa in basso."],
     cardio:["Push-up inclinato al muro",[12,16,20],null,"Evita la posizione con la testa sotto il livello del cuore."],
     polsi:["Spinta isometrica al muro",[20,30,40],"s","Avambracci al muro, spingi come per allontanarlo: attiva le spalle senza estendere il polso."]},
@@ -1081,7 +1149,7 @@ const ALT = {
     schiena:["Rematore con asciugamano da seduto",[10,14,18],null,"Asciugamano attorno ai piedi, tira verso l'ombelico con la schiena neutra."],
     spalle:["Rematore con asciugamano da seduto",[10,14,18],null,"Range corto e controllato, gomiti vicini al corpo."]},
   "Dip su sedia":{
-    spalle:["Push-up inclinato a gomiti stretti",[10,14,18],null,"Stessi tricipiti con la spalla fuori dalla posizione critica di estensione."],
+    spalle:["Estensione tricipiti inclinata",[10,14,18],null,"Mani strette sul bordo di un tavolo, gomiti aderenti al corpo: tricipiti con la spalla fuori dall'estensione critica."],
     polsi:["Push-up diamante sui pugni",[6,10,14],null,"Pugni chiusi, polso dritto in linea con l'avambraccio."]},
   "Superman":{
     schiena:["Bird dog",[10,14,18],null,"Per lato. A quattro zampe, braccio e gamba opposti: catena posteriore attiva senza estensione lombare."]},
@@ -1099,7 +1167,7 @@ const ALT = {
     caviglie:["Squat a corpo libero",[12,16,20],null,"Senza salto."],
     cardio:["Squat a corpo libero",[12,16,20],null,"Ritmo controllato."]},
   "Affondo inverso":{
-    ginocchia:["Ponte glutei",[14,18,22],null,"Glutei e femorali senza flessione caricata del ginocchio."],
+    ginocchia:["Ponte glutei con pausa in alto",[12,16,20],null,"Due secondi di contrazione in cima: stimolo alto sui glutei, zero flessione caricata del ginocchio."],
     caviglie:["Ponte glutei",[14,18,22],null,"Nessun appoggio instabile."]},
   "Wall sit":{
     ginocchia:["Wall sit alto",[30,45,60],"s","Fermati a 120–130° invece che a 90°: l'angolo aperto scarica la rotula."],
@@ -1109,7 +1177,7 @@ const ALT = {
   "Calf raise su gradino":{
     caviglie:["Calf raise a terra range parziale",[15,20,25],null,"A terra, senza allungamento sotto il livello del piede."]},
   "Step-up su sedia":{
-    ginocchia:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Glutei senza carico sul ginocchio in flessione."],
+    ginocchia:["Abduzione dell'anca da sdraiato",[12,16,20],null,"Per gamba. Su un fianco, sollevi la gamba tesa: glutei laterali senza caricare l'articolazione."],
     caviglie:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Nessun appoggio monopodalico in equilibrio."]},
   "Burpee senza push-up":{
     schiena:["Passo indietro in plank su sedia",[8,12,16],null,"Mani su una sedia, un piede alla volta."],
@@ -1129,13 +1197,13 @@ const ALT = {
   "Tirata isometrica con asciugamano":{
     spalle:["Tirata isometrica a gomito basso",[10,14,18],null,"Gomito vicino al fianco: evita l'abduzione che irrita la cuffia."]},
   "Reverse snow angel":{
-    schiena:["Bird dog",[10,14,18],null,"Per lato. Stesso lavoro posteriore senza estensione lombare."],
+    schiena:["Retrazione scapolare da seduto",[12,16,20],null,"Schiena appoggiata, avvicini le scapole e tieni due secondi: dorsali alti senza estendere la lombare."],
     spalle:["Y-raise a terra range ridotto",[12,15,18],null,"Fermati dove il movimento resta indolore."]},
   "Y-raise a terra":{
     spalle:["Scivolamenti al muro",[10,14,18],null,"In piedi, schiena al muro: stesso trapezio inferiore in un range più gentile."],
     schiena:["Bird dog",[10,14,18],null,"Per lato."]},
   "Squat bulgaro":{
-    ginocchia:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Carico sui glutei senza flessione profonda del ginocchio."],
+    ginocchia:["Ponte glutei con talloni su sedia",[12,16,20],null,"Talloni sul bordo della sedia, ginocchio in angolo aperto: femorali e glutei senza flessione profonda."],
     caviglie:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Nessun equilibrio richiesto alla caviglia."]},
   "Squat tempo 3-1-1":{
     ginocchia:["Squat parziale al muro tempo 3-1-1",[10,14,18],null,"Stesso tempo sotto tensione, range ridotto al tratto indolore."]},
@@ -1146,16 +1214,16 @@ const ALT = {
     polsi:["Plank sugli avambracci in avanzamento",[20,30,45],"s","Sui gomiti: porta le spalle oltre i gomiti e tieni."],
     spalle:["Plank alto con protrazione scapolare",[20,30,45],"s","Spingi il pavimento allontanando le scapole, senza inclinare le spalle in avanti."]},
   "Hollow rock":{
-    schiena:["Dead bug lento",[12,16,20],null,"Per lato. Zero oscillazione sulla lombare."],
+    schiena:["Ponte glutei con marcia",[10,14,18],null,"Per lato. In appoggio sul ponte stacchi un piede alla volta: anti-rotazione senza oscillare sulla lombare."],
     collo:["Hollow hold con testa appoggiata",[20,30,45],"s","Testa a terra per tutta la durata."]},
   "Pistol squat assistito":{
-    ginocchia:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Il pistol è la flessione più estrema per il ginocchio: rimandalo."],
+    ginocchia:["Stacco rumeno a una gamba",[8,12,16],null,"Per gamba. L'anca si flette, il ginocchio resta quasi fermo: forza monopodalica senza il range che infiamma."],
     caviglie:["Ponte glutei a una gamba",[10,14,18],null,"Per gamba. Richiede una mobilità di caviglia che ora non conviene forzare."]},
   "L-sit tuck":{
     polsi:["Hollow hold",[20,30,45],"s","Stesso core anteriore, nessun carico sui polsi."],
     spalle:["Hollow hold",[20,30,45],"s","Nessuna depressione scapolare sotto carico."]},
   "Verticale al muro":{
-    spalle:["Plank alto con protrazione scapolare",[20,30,45],"s","La verticale carica la spalla in massima flessione: rimandala."],
+    spalle:["Spinta isometrica al muro",[20,30,40],"s","Avambracci al muro, spingi come per allontanarlo: la verticale carica la spalla in massima flessione."],
     polsi:["Plank sugli avambracci",[30,45,60],"s","Nessun carico sul polso in estensione."],
     collo:["Plank alto",[25,40,55],"s","Nessun carico con la testa in basso."],
     cardio:["Plank alto",[25,40,55],"s","Niente posizioni invertite: evitano gli sbalzi di pressione."]},
@@ -1164,6 +1232,57 @@ const ALT = {
     spalle:["Ponte glutei",[15,20,25],null,"Il bridge completo richiede una flessione di spalla estrema."],
     polsi:["Ponte glutei",[15,20,25],null,"Nessun appoggio sulle mani."],
     collo:["Ponte glutei",[15,20,25],null,"Nessun carico sul rachide cervicale."]}
+};
+
+/* Riserve: quando due esercizi diversi finiscono sulla stessa variante, il
+   secondo pesca da qui. Ordinate dalla più specifica alla più generica. */
+const RISERVE = {
+  schiena:[
+    ["Curl-up di McGill",[10,14,18],null,"Mani sotto la lombare, sollevi solo testa e spalle: addome attivo a colonna ferma."],
+    ["Marcia da supino",[14,20,26],null,"Per lato. Lombare a contatto col pavimento, ginocchia alternate lentamente."],
+    ["Ponte glutei con marcia",[10,14,18],null,"Per lato. Sul ponte stacchi un piede alla volta senza far cadere il bacino."],
+    ["Bird dog hold",[15,25,35],"s","Per lato. Isometria a quattro zampe, colonna neutra dall'inizio alla fine."],
+    ["Retrazione scapolare da seduto",[12,16,20],null,"Avvicini le scapole e tieni due secondi: dorsali alti, lombare a riposo."],
+    ["Plank sugli avambracci con ginocchia a terra",[25,35,50],"s","Leva corta: il core lavora senza tirare sulla lombare."]],
+  ginocchia:[
+    ["Abduzione dell'anca da sdraiato",[12,16,20],null,"Per gamba. Su un fianco, gamba tesa che sale: glutei laterali a ginocchio fermo."],
+    ["Ponte glutei con talloni su sedia",[12,16,20],null,"Angolo del ginocchio aperto: femorali e glutei senza compressione rotulea."],
+    ["Stacco rumeno a una gamba",[8,12,16],null,"Per gamba. Flessione d'anca, ginocchio quasi fermo."],
+    ["Wall sit alto",[30,45,60],"s","Fermati a 120–130°: l'angolo aperto scarica la rotula."],
+    ["Ponte glutei con pausa in alto",[12,16,20],null,"Due secondi di contrazione in cima."],
+    ["Calf raise a terra range parziale",[15,20,25],null,"Solo la metà alta del movimento."]],
+  spalle:[
+    ["Scivolamenti al muro",[10,14,18],null,"Schiena e braccia al muro, scorri su e giù solo nel range indolore."],
+    ["Rematore con asciugamano da seduto",[10,14,18],null,"Gomiti vicini al corpo, range corto e controllato."],
+    ["Estensione tricipiti inclinata",[10,14,18],null,"Mani strette sul bordo di un tavolo, gomiti aderenti."],
+    ["Tirata isometrica a gomito basso",[10,14,18],null,"Gomito al fianco: nessuna abduzione che irriti la cuffia."],
+    ["Plank sugli avambracci",[30,45,60],"s","Gomiti sotto le spalle: nessuna spinta sopra la testa."],
+    ["Ponte glutei",[15,20,25],null,"La catena posteriore lavora mentre la spalla resta scarica."]],
+  polsi:[
+    ["Plank sugli avambracci",[30,45,60],"s","Gomiti sotto le spalle: nessun polso in estensione."],
+    ["Push-up sui pugni",[8,12,18],null,"Pugni chiusi, polso in linea con l'avambraccio."],
+    ["Hollow hold",[20,30,45],"s","Core anteriore senza appoggio sulle mani."],
+    ["Ginocchia al petto in piedi",[30,40,50],"s","Stimolo cardiaco in piedi, mani libere."],
+    ["Plank sugli avambracci con spostamento",[30,45,60],"s","Sui gomiti, sposti lentamente il peso da un lato all'altro."],
+    ["Ponte glutei",[15,20,25],null,"Nessun coinvolgimento del polso."]],
+  caviglie:[
+    ["Ponte glutei",[15,20,25],null,"Lavoro a terra, nessun carico in appoggio sul piede."],
+    ["Squat parziale al muro",[12,16,22],null,"Schiena al muro, piede piatto e stabile."],
+    ["Dead bug",[12,16,20],null,"Per lato. Caviglia completamente scarica."],
+    ["Plank sugli avambracci",[30,45,60],"s","Isometria senza spinta sull'avampiede."],
+    ["Marcia sul posto",[45,60,75],"s","Appoggio piatto, ritmo tranquillo."]],
+  collo:[
+    ["Dead bug",[12,16,20],null,"Per lato. La testa resta appoggiata a terra."],
+    ["Hollow hold con testa appoggiata",[20,30,45],"s","Solo braccia e gambe sollevate."],
+    ["Ponte glutei",[15,20,25],null,"Cervicale neutra per tutto il movimento."],
+    ["Squat a corpo libero",[12,16,20],null,"Nessun carico sul rachide cervicale."],
+    ["Plank alto",[25,40,55],"s","Sguardo a terra, collo in linea con la schiena."]],
+  cardio:[
+    ["Marcia sul posto",[45,60,75],"s","Ritmo che ti lascia respirare dal naso."],
+    ["Squat con alzata delle braccia",[10,14,18],null,"Intensità moderata, nessuna fase a terra."],
+    ["Step touch laterale",[40,50,60],"s","Passo laterale continuo, respiro controllato."],
+    ["Ponte glutei",[15,20,25],null,"Lavoro a terra, frequenza cardiaca bassa."],
+    ["Plank sugli avambracci",[30,45,60],"s","Isometria breve: non trattenere il respiro."]]
 };
 
 const WEEK = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -1452,8 +1571,23 @@ function adapt(ex){
 }
 // [{ex, i}] con i = indice originale, così i progressi restano ancorati
 function activeEx(day){
-  const out = [];
-  day.ex.forEach((raw,i)=>{ const e = adapt(raw); if(e) out.push({ex:e, i}); });
+  const out = [], adattati = [], usati = new Set();
+  // Gli esercizi non toccati dalle limitazioni prenotano il proprio nome:
+  // un adattamento non puo' duplicarne uno gia' presente nella seduta.
+  day.ex.forEach((raw,i)=>{
+    const e = adapt(raw); if(!e) return;
+    if(e.adapted) adattati.push({e, i}); else { usati.add(e.n); out.push({ex:e, i}); }
+  });
+  adattati.forEach(o=>{
+    let e = o.e;
+    if(usati.has(e.n)){
+      const pool = RISERVE[e.adapted] || [];
+      const alt = pool.find(a=>!usati.has(a[0]));
+      if(alt) e = {n:alt[0], r:alt[1], u:alt[2]||undefined, st:e.st, t:alt[3], adapted:e.adapted, base:e.base};
+    }
+    usati.add(e.n); out.push({ex:e, i:o.i});
+  });
+  out.sort((a,b)=>a.i-b.i);
   return out;
 }
 function totalSets(day){ return activeEx(day).length * setsOf(day); }
@@ -1863,7 +1997,7 @@ function paintStatus(){
     box.innerHTML = '<div class="dttl" style="font-size:16px">'+esc(d.n)+'</div>'
       + '<div class="dmeta">'+esc(d.d)+' · '+setsOf(d)+' serie × '+d.ex.length+' esercizi</div>'
       + (done? '<div class="xpbar" style="margin-top:10px"><div class="xpfill" style="width:'+(done/tot*100)+'%"></div></div><div class="lbl mono" style="margin-top:6px">'+done+' / '+tot+' serie</div>':'')
-      + '<button class="btn '+(complete?'gold':'')+'" style="margin-top:12px" onclick="go(\'train\')">'+(complete?'Sessione completata':(done?'Riprendi sessione':'Inizia sessione'))+'</button>';
+      + '<button class="btn '+(complete?'gold':'')+'" style="margin-top:12px" onclick="'+(complete?'go(\'train\')':'go(\'train\');avviaGuida()')+'">'+(complete?'Sessione completata':(done?'Riprendi sessione':'Inizia sessione'))+'</button>';
   }
 
   // peso
@@ -2498,6 +2632,180 @@ function paintLog(){
   }).join("");
 }
 
+/* ---------- 7d. SESSIONE GUIDATA ---------------------------
+   Una cosa sola sullo schermo alla volta. In palestra non si
+   scorre una lista: si guarda cosa fare adesso.            */
+let gPassi = [], gIdx = 0, gTimer = null, gFine = 0, gTot = 0;
+
+// L'ordine di esecuzione dipende dal tipo di seduta: nel circuito si fa
+// un giro completo e poi si riposa, nelle serie dritte si riposa fra le serie.
+function costruisciPassi(dayIdx){
+  const d = dayObj(dayIdx), act = activeEx(d), n = setsOf(d);
+  const circuito = /circuito/i.test(d.d);
+  const out = [];
+  if(circuito){
+    for(let s=0; s<n; s++){
+      act.forEach((o,k)=>{
+        out.push({ex:o.ex, i:o.i, set:s, giro:s+1, giri:n});
+        // pausa breve fra un esercizio e l'altro, piena solo a fine giro
+        if(k < act.length-1) out.push({riposo:true, breve:true});
+      });
+      if(s < n-1) out.push({riposo:true, giro:s+1, giri:n});
+    }
+  } else {
+    act.forEach((o,k)=>{
+      for(let s=0; s<n; s++){
+        out.push({ex:o.ex, i:o.i, set:s, serie:s+1, serieTot:n});
+        if(!(k === act.length-1 && s === n-1)) out.push({riposo:true});
+      }
+    });
+  }
+  return out;
+}
+function passoFatto(p){ return p.riposo ? false : (S.cur.done[p.i]||[]).indexOf(p.set) >= 0; }
+
+window.avviaGuida = function(){
+  const i = currentDayIdx();
+  ensureSession(i);
+  gPassi = costruisciPassi(i);
+  // riprende dal primo passo non ancora completato
+  gIdx = gPassi.findIndex(p=>!p.riposo && !passoFatto(p));
+  if(gIdx < 0) gIdx = gPassi.length;
+  if(gIdx >= gPassi.length){ finishSession(); return; }
+  keepAwake(true);
+  $("guida").classList.add("on");
+  document.body.classList.add("bloccato");
+  disegnaPasso();
+};
+window.esciGuida = function(){
+  clearInterval(gTimer); gTimer = null;
+  $("guida").classList.remove("on");
+  document.body.classList.remove("bloccato");
+  save(); render();
+};
+
+function vaiAvanti(){
+  clearInterval(gTimer); gTimer = null;
+  gIdx++;
+  while(gIdx < gPassi.length && passoFatto(gPassi[gIdx])) gIdx++;
+  if(gIdx >= gPassi.length){
+    $("guida").classList.remove("on");
+    document.body.classList.remove("bloccato");
+    finishSession();
+    return;
+  }
+  disegnaPasso();
+}
+window.completaPasso = function(){
+  const p = gPassi[gIdx];
+  if(p && !p.riposo){ completeSet(p.i, p.set); save(); paintHeader(); }
+  vaiAvanti();
+};
+window.saltaPasso = function(){ clearInterval(gTimer); gTimer=null; vaiAvanti(); };
+
+function prossimoEsercizio(){
+  for(let k=gIdx+1; k<gPassi.length; k++) if(!gPassi[k].riposo) return gPassi[k];
+  return null;
+}
+
+function disegnaPasso(){
+  const p = gPassi[gIdx];
+  const fatti = gPassi.filter((x,k)=>!x.riposo && k<=gIdx).length;
+  const tot = gPassi.filter(x=>!x.riposo).length;
+  const pct = Math.round((gPassi.filter((x,k)=>!x.riposo && passoFatto(x)).length / tot) * 100);
+  const box = $("guidaBox");
+
+  if(p.riposo){
+    const sec = p.breve ? transitFor() : restFor();
+    const pr = prossimoEsercizio();
+    const tit = p.breve ? "Cambio esercizio"
+      : (p.giro ? "Recupero · fine giro "+p.giro+" di "+p.giri : "Recupero");
+    box.innerHTML = '<div class="g-top"><span class="lbl">'+esc(tit)+'</span>'
+      + '<button class="g-esci" onclick="esciGuida()" aria-label="Esci dalla guida">✕</button></div>'
+      + '<div class="g-barra"><div style="width:'+pct+'%"></div></div>'
+      + '<div class="g-centro">'
+      + '<div class="g-cerchio"><svg viewBox="0 0 120 120"><circle class="g-tr" cx="60" cy="60" r="52"/>'
+      + '<circle class="g-fr" id="gArc" cx="60" cy="60" r="52"/></svg>'
+      + '<div class="g-num" id="gNum">'+sec+'</div></div>'
+      + (!p.breve && has("attivo") ? '<div class="g-mob">'+esc(MOBILITA[(gIdx)%MOBILITA.length])+'</div>' : '')
+      + (pr ? '<div class="g-next">Poi: <strong>'+esc(pr.ex.n)+'</strong>'
+          + (pr.giro ? ' · giro '+pr.giro : ' · serie '+pr.serie)
+          + (pr.ex.u==="s" ? ' · '+repOf(pr.ex)+'s' : ' · '+repOf(pr.ex)+' rip')+'</div>'
+        : '<div class="g-next">Ultima serie fatta</div>')
+      + '</div>'
+      + '<div class="g-azioni">'
+      + '<button class="btn" onclick="saltaPasso()">'+(p.breve ? "Sono pronto" : "Salta il recupero")+'</button>'
+      + (!p.breve && has("respiro") ? '<button class="btn ghost sm" onclick="regolaRiposo(-15)">−15s</button>' : '')
+      + (!p.breve && has("fiato") ? '<button class="btn ghost sm" onclick="regolaRiposo(60)">+60s</button>' : '')
+      + '</div>';
+    avviaConto(sec, true);
+    return;
+  }
+
+  const rep = repOf(p.ex);
+  const aTempo = p.ex.u === "s";
+  const etichetta = p.giro ? "Giro "+p.giro+" di "+p.giri : "Serie "+p.serie+" di "+p.serieTot;
+
+  box.innerHTML = '<div class="g-top"><span class="lbl">Serie '+fatti+' di '+tot+'</span>'
+    + '<button class="g-esci" onclick="esciGuida()" aria-label="Esci dalla guida">✕</button></div>'
+    + '<div class="g-barra"><div style="width:'+pct+'%"></div></div>'
+    + '<div class="g-centro">'
+    + '<div class="lbl" style="color:var(--sys)">'+esc(etichetta)+'</div>'
+    + '<div class="g-nome">'+esc(p.ex.n)+'</div>'
+    + (p.ex.adapted ? '<div class="exsub" style="text-align:center">al posto di '+esc(p.ex.base)+'</div>' : '')
+    + (aTempo ? '' : '<div class="g-target">'+rep+'<span>ripetizioni</span></div>')
+    + (aTempo
+        ? '<div class="g-cerchio"><svg viewBox="0 0 120 120"><circle class="g-tr" cx="60" cy="60" r="52"/>'
+          + '<circle class="g-fr" id="gArc" cx="60" cy="60" r="52"/></svg>'
+          + '<div class="g-num" id="gNum">'+rep+'</div></div>'
+        : '')
+    + '<div class="g-tip">'+esc(p.ex.t)+'</div>'
+    + '</div>'
+    + '<div class="g-azioni">'
+    + '<button class="btn gold" onclick="completaPasso()">'+(aTempo ? "Fatto" : "Completato")+'</button>'
+    + '<button class="btn ghost sm" onclick="saltaPasso()">Salta</button>'
+    + (has("ritmo") && !aTempo ? '<button class="btn ghost sm" onclick="startRitmo()">Ritmo</button>' : '')
+    + '</div>';
+
+  if(aTempo) avviaConto(rep, false, ()=>{ completaPasso(); });
+}
+
+// Il cambio esercizio nel circuito non e' un recupero: e' il tempo di
+// spostarsi e riposizionarsi. Un terzo del recupero pieno, fra 15 e 30 s.
+function transitFor(){ return Math.max(15, Math.min(30, Math.round(restFor()/3))); }
+
+window.regolaRiposo = function(d){
+  gFine += d*1000; gTot = Math.max(10, gTot + d);
+  if(gFine < Date.now()) gFine = Date.now();
+};
+
+/* Un solo conto alla rovescia, calcolato sull'orologio: sopravvive al
+   blocco schermo come il timer della lista. */
+function avviaConto(sec, auto, alTermine){
+  clearInterval(gTimer);
+  gTot = sec; gFine = Date.now() + sec*1000;
+  let finito = false;
+  const tick = ()=>{
+    const left = Math.max(0, Math.ceil((gFine - Date.now())/1000));
+    const num = $("gNum"), arc = $("gArc");
+    if(!num){ clearInterval(gTimer); return; }
+    num.textContent = left;
+    if(arc){
+      const c = 2*Math.PI*52;
+      arc.style.strokeDasharray = c;
+      arc.style.strokeDashoffset = c * (1 - left/Math.max(1,gTot));
+    }
+    if(left <= 0 && !finito){
+      finito = true; clearInterval(gTimer); gTimer = null; beep();
+      if(auto) vaiAvanti(); else if(alTermine) alTermine();
+    }
+  };
+  tick(); gTimer = setInterval(tick, 200);
+}
+document.addEventListener("visibilitychange", ()=>{
+  if(!document.hidden && gTimer){ /* il tick ricalcola dall'orologio */ }
+});
+
 /* ---------- 8. AZIONI -------------------------------------- */
 function go(v){
   curView = v;
@@ -2524,25 +2832,32 @@ function openDay(i){
   save(); go("train");
 }
 
-function toggleSet(ei, si){
+// Registra una serie: XP, statistica, conteggio esecuzioni. Nessun effetto
+// se era gia' segnata.
+function completeSet(ei, si){
   const d = dayObj(currentDayIdx());
   if(!S.cur.done[ei]) S.cur.done[ei]=[];
   const arr = S.cur.done[ei];
-  const at = arr.indexOf(si);
-  if(at>=0){ arr.splice(at,1); }
-  else {
-    arr.push(si);
-    if(!S.cur.t0) S.cur.t0 = Date.now();   // la sessione parte alla prima serie
-    S.totalSets++;
-    if(arr.length >= setsOf(d)){
-      const nome = (adapt(d.ex[ei])||{}).n;
-      if(nome) S.exCount[nome] = (S.exCount[nome]||0) + 1;
-    }
-    const ax = adapt(d.ex[ei]);
-    if(ax) S.stats[ax.st] += 1;
-    addXP(10 * LEVELS[S.level].mult);
-    startRest(restFor());
+  if(arr.indexOf(si) >= 0) return false;
+  arr.push(si);
+  if(!S.cur.t0) S.cur.t0 = Date.now();   // la sessione parte alla prima serie
+  S.totalSets++;
+  if(arr.length >= setsOf(d)){
+    const nome = (adapt(d.ex[ei])||{}).n;
+    if(nome) S.exCount[nome] = (S.exCount[nome]||0) + 1;
   }
+  const ax = adapt(d.ex[ei]);
+  if(ax) S.stats[ax.st] += 1;
+  addXP(10 * LEVELS[S.level].mult);
+  return true;
+}
+
+function toggleSet(ei, si){
+  if(!S.cur.done[ei]) S.cur.done[ei]=[];
+  const arr = S.cur.done[ei];
+  const at = arr.indexOf(si);
+  if(at >= 0){ arr.splice(at,1); }
+  else if(completeSet(ei, si)){ startRest(restFor()); }
   save(); paintHeader(); syncSetUI(ei);
 }
 
@@ -2712,6 +3027,7 @@ document.querySelectorAll("#segLvl button").forEach(b=>b.addEventListener("click
 }));
 $("btnEdit").addEventListener("click",()=>profileForm(false));
 $("btnLim").addEventListener("click",()=>profileForm(false));
+$("btnGuida").addEventListener("click", avviaGuida);
 $("btnFinish").addEventListener("click", finishSession);
 $("btnReset").addEventListener("click",()=>{ S.cur={key:S.cur.key,done:{}}; save(); paintTrain(); });
 $("btnW").addEventListener("click", addWeight);
