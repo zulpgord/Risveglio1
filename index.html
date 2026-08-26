@@ -222,20 +222,30 @@ header{
   border-bottom:1px solid var(--line-soft);
   padding:12px 0 11px;
 }
-.hd{display:flex;align-items:center;gap:12px}
-.rank{
-  width:60px;height:60px;flex:none;display:grid;place-items:center;
-  font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:26px;
-  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
-  background:var(--panel-2);color:var(--sys);
-  border:0;position:relative;
-  box-shadow:0 0 0 1px var(--line), 0 0 22px -6px color-mix(in srgb, currentColor calc(var(--halo)*100%), transparent);
+.hd{display:flex;align-items:center;gap:13px}
+/* L'esagono del rango porta il progresso di livello sul proprio bordo:
+   l'anello esagonale è il contenitore, non un elemento separato. */
+.rankwrap{position:relative;width:74px;height:74px;flex:none;display:grid;place-items:center}
+.rankring{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rr-tr{fill:none;stroke:var(--line);stroke-width:3}
+.rr-fr{
+  fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;
+  transition:stroke-dashoffset .7s cubic-bezier(.2,.8,.3,1);
+  filter:drop-shadow(0 0 5px color-mix(in srgb, currentColor calc(var(--halo)*90%), transparent));
 }
-.rank span{position:relative;top:-1px;font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;font-size:27px;transform:skewX(-6deg)}
-.rank::before{
-  content:"";position:absolute;inset:-5px;pointer-events:none;
+.rank{
+  width:58px;height:58px;flex:none;display:grid;place-items:center;
+  font-family:"Chakra Petch",sans-serif;font-weight:700;
   clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
-  border:1px solid currentColor;opacity:.4;
+  background:linear-gradient(160deg, var(--panel-2), var(--well));
+  color:var(--sys);border:0;position:relative;
+  box-shadow:0 0 26px -6px color-mix(in srgb, currentColor calc(var(--halo)*100%), transparent);
+}
+.rank span{
+  position:relative;top:-1px;
+  font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;font-size:34px;
+  line-height:1;transform:skewX(-7deg);
+  text-shadow:0 0 18px color-mix(in srgb, currentColor calc(var(--halo)*85%), transparent);
 }
 .hd-mid{flex:1;min-width:0}
 .hname{
@@ -245,6 +255,10 @@ header{
 }
 .hsub{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;display:flex;align-items:baseline;gap:7px}
 .hlv{font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;font-size:20px;color:var(--txt);transform:skewX(-6deg);line-height:1}
+.rlbl{
+  font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.16em;
+  color:var(--dimmer);text-transform:uppercase;text-align:center;margin-top:1px;
+}
 .xpbar{
   height:8px;background:var(--well);border:1px solid var(--line-soft);
   margin-top:7px;overflow:hidden;position:relative;
@@ -456,6 +470,37 @@ input:focus,textarea:focus{border-color:var(--sys);outline:none;box-shadow:0 0 0
 }
 .extip{font-size:12px;color:var(--dim);margin:6px 0 9px;line-height:1.45}
 .sets{display:flex;flex-wrap:wrap;gap:7px}
+/* Anello delle serie: un solo bersaglio grande al posto di tre caselle.
+   Tocco = una serie in più, "annulla" toglie l'ultima. */
+.exring{display:flex;align-items:center;gap:13px;margin-top:10px}
+.ring{
+  position:relative;width:62px;height:62px;flex:none;display:grid;place-items:center;
+  border:0;background:none;padding:0;
+}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring .rtr{fill:none;stroke:var(--line);stroke-width:4}
+.ring .rfr{
+  fill:none;stroke:var(--sys);stroke-width:4;stroke-linecap:round;
+  transition:stroke-dashoffset .45s cubic-bezier(.2,.8,.3,1);
+}
+.ring .rnum{
+  font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;font-size:25px;
+  color:var(--txt);line-height:1;transform:skewX(-6deg);font-variant-numeric:tabular-nums;
+}
+.ring .rtot{font-family:"IBM Plex Mono",monospace;font-size:9px;color:var(--dimmer);letter-spacing:.1em;margin-top:1px}
+.ring:active{transform:scale(.94)}
+.ex.full .ring .rfr{stroke:var(--ok)}
+.ex.full .ring .rnum{color:var(--ok)}
+.ringinfo{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ringtxt{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+/* barra del percorso verso l'obiettivo di peso */
+.wtrack{position:relative;height:10px;background:var(--well);border:1px solid var(--line-soft);margin-top:10px}
+.wfill{height:100%;background:linear-gradient(90deg,var(--sys-deep),var(--sys));transition:width .6s cubic-bezier(.2,.8,.3,1)}
+.wmark{
+  position:absolute;top:-4px;width:2px;height:16px;background:var(--gold);
+  box-shadow:0 0 9px color-mix(in srgb, var(--gold) calc(var(--halo)*100%), transparent);
+}
+.wends{display:flex;justify-content:space-between;gap:8px;margin-top:6px}
 .setb{
   width:46px;height:46px;border:1px solid var(--line);background:var(--well);
   font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--dim);
@@ -524,12 +569,38 @@ body.bloccato{overflow:hidden}
 .g-barra div{height:100%;background:var(--sys);transition:width .4s ease}
 .g-centro{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:12px;text-align:center;overflow-y:auto;padding:14px 0;
+  gap:15px;text-align:center;overflow-y:auto;padding:10px 0;
 }
 .g-nome{
-  font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:27px;line-height:1.1;
-  text-wrap:balance;
+  font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:32px;line-height:1.05;
+  text-wrap:balance;letter-spacing:-.01em;
 }
+/* riga d'intestazione dell'esercizio: ruolo statistico + posizione nel giro */
+.g-eti{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.g-stat{
+  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;
+  border:1px solid currentColor;padding:3px 7px;
+}
+/* pallini delle serie: quante ne hai chiuse di questo esercizio */
+.g-dots{display:flex;gap:9px;align-items:center}
+.g-dots span{
+  width:12px;height:12px;background:var(--well);border:1px solid var(--line);
+  transform:rotate(45deg);transition:.25s;
+}
+.g-dots span.on{
+  background:var(--sys);border-color:var(--sys);
+  box-shadow:0 0 12px -2px color-mix(in srgb, var(--sys) calc(var(--halo)*100%), transparent);
+}
+.g-dots span.now{border-color:var(--gold);animation:battito 1.6s ease-in-out infinite}
+@keyframes battito{0%,100%{opacity:1;transform:rotate(45deg) scale(1)}50%{opacity:.45;transform:rotate(45deg) scale(.82)}}
+.g-unit{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);margin-top:-4px;
+}
+.g-cerchio.grande{width:196px;height:196px}
+.g-cerchio.grande .g-num{font-size:68px}
+/* numero e unita' sono un blocco solo: senza questo la griglia li spinge ai due estremi del cerchio */
+.g-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
 .g-target{
   font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
   font-size:92px;line-height:.85;color:var(--sys);transform:skewX(-6deg);
@@ -548,7 +619,7 @@ body.bloccato{overflow:hidden}
 }
 .g-cerchio{position:relative;width:170px;height:170px;display:grid;place-items:center}
 .g-cerchio svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.g-tr{fill:none;stroke:var(--line-soft);stroke-width:7}
+.g-tr{fill:none;stroke:var(--line);stroke-width:7}
 .g-fr{fill:none;stroke:var(--sys);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
 .g-num{
   font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
@@ -609,6 +680,42 @@ body.bloccato{overflow:hidden}
   opacity:.85;
 }
 /* Lettering d'impatto: condensato, inclinato, con doppio contorno. */
+/* ---------- salita di livello ---------- */
+.lvup{display:grid;place-items:center;padding:2px 0}
+.lvup-scena{position:relative;width:158px;height:158px;display:grid;place-items:center}
+.lvup-hex{
+  position:absolute;inset:0;width:100%;height:100%;fill:none;
+  stroke:var(--gold);stroke-width:2;
+  filter:drop-shadow(0 0 14px color-mix(in srgb, var(--gold) calc(var(--halo)*85%), transparent));
+  animation:lvHex .8s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes lvHex{
+  0%{opacity:0;transform:scale(.32) rotate(-40deg)}
+  55%{opacity:1}
+  100%{opacity:1;transform:scale(1) rotate(0)}
+}
+.lvup-onda{
+  position:absolute;width:150px;height:150px;border:1px solid var(--gold);
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  opacity:0;pointer-events:none;animation:lvOnda 1.9s ease-out .4s infinite;
+}
+.lvup-onda.d2{animation-delay:1.35s}
+@keyframes lvOnda{0%{opacity:.6;transform:scale(.55)}100%{opacity:0;transform:scale(1.85)}}
+.lvup-num{
+  position:relative;font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
+  font-size:76px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 30px color-mix(in srgb, var(--gold) calc(var(--halo)*75%), transparent),
+              3px 3px 0 color-mix(in srgb, var(--void) 85%, transparent);
+  animation:lvPop .55s .22s cubic-bezier(.2,1.5,.4,1) both;
+}
+@keyframes lvPop{0%{opacity:0;transform:skewX(-7deg) scale(.45)}100%{opacity:1;transform:skewX(-7deg) scale(1)}}
+.lvIn{animation:lvEntra .5s cubic-bezier(.2,.9,.3,1) both}
+@keyframes lvEntra{0%{opacity:0;transform:translateX(-16px)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .lvup-hex,.lvup-num,.lvIn{animation:none;opacity:1;transform:none}
+  .lvup-onda{display:none}
+}
+.treetabs{margin-bottom:14px}
 .lvlnum{
   font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
   font-size:88px;line-height:.86;text-align:center;color:var(--gold);
@@ -707,12 +814,18 @@ body.bloccato{overflow:hidden}
 <body>
 <header>
   <div class="wrap hd">
-    <div class="rank" id="rankBadge"><span>E</span></div>
+    <div class="rankwrap">
+      <svg class="rankring" viewBox="0 0 74 74" aria-hidden="true" focusable="false">
+        <path class="rr-tr" d="M37 3 L71 20 L71 54 L37 71 L3 54 L3 20 Z"/>
+        <path class="rr-fr" id="xpRing" d="M37 3 L71 20 L71 54 L37 71 L3 54 L3 20 Z"/>
+      </svg>
+      <div class="rank" id="rankBadge"><span>E</span></div>
+    </div>
     <div class="hd-mid">
       <div class="title-line" id="hTitle" hidden></div>
       <div class="hname" id="hName">CACCIATORE</div>
       <div class="hsub"><span class="hlv" id="hLvl">1</span><span id="hXp">0 / 120 XP</span></div>
-      <div class="xpbar"><div class="xpfill" id="xpFill" style="width:0%"></div></div>
+      <div class="rlbl" id="hRank" style="text-align:left;margin-top:3px">Rango E</div>
     </div>
     <div class="sync"><span class="dot off" id="syncDot"></span><span id="syncTxt">—</span></div>
   </div>
@@ -769,6 +882,8 @@ body.bloccato{overflow:hidden}
         </div>
         <div class="note" id="sugg" style="border-left-color:var(--sys)" hidden></div>
         <div class="extip" id="lvlDesc" style="margin-top:12px"></div>
+        <button class="btn ghost sm" id="btnTest" style="width:100%;margin-top:10px">Test di valutazione</button>
+        <div class="lbl" style="margin-top:8px" id="testRiep"></div>
         <div class="lbl" style="margin-top:14px" id="profRiep"></div>
         <button class="btn ghost sm" id="btnEdit" style="width:100%;margin-top:8px">Modifica profilo</button>
       </div>
@@ -829,7 +944,19 @@ body.bloccato{overflow:hidden}
           <div class="field" style="margin:0"><span class="lbl">Kg</span><input type="number" step="0.1" inputmode="decimal" id="inW" placeholder="00.0"></div>
           <div class="field" style="margin:0"><span class="lbl">Data</span><input type="date" id="inWD"></div>
         </div>
+        <div class="field" style="margin:10px 0 0"><span class="lbl">Girovita in cm · facoltativo</span>
+          <input type="number" step="0.5" inputmode="decimal" id="inG" placeholder="00.0"></div>
+        <div class="extip">Misuralo una volta a settimana, appena sveglio, all'altezza dell'ombelico e senza tirare. Il peso oscilla di oltre un chilo al giorno per acqua e sale; il girovita no.</div>
         <button class="btn" id="btnW" style="margin-top:12px">Registra · +15 XP</button>
+      </div>
+      <div class="panel" id="pnlGiro">
+        <div class="panel-t"><span>Girovita</span></div>
+        <div id="giroBox"></div>
+        <div class="grid3" style="margin-top:12px">
+          <div class="cell"><div class="lbl">Ultima</div><div class="mono" style="font-size:17px;font-weight:600" id="gLast">—</div></div>
+          <div class="cell"><div class="lbl">Var. 30g</div><div class="mono" style="font-size:17px;font-weight:600" id="gVar">—</div></div>
+          <div class="cell"><div class="lbl">Rilevazioni</div><div class="mono" style="font-size:17px;font-weight:600" id="gN">0</div></div>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-t"><span>Andamento</span></div>
@@ -938,7 +1065,7 @@ body.bloccato{overflow:hidden}
 
 <script>
 "use strict";
-const APP_VERSION = "2.2.0";
+const APP_VERSION = "2.4.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -1392,11 +1519,11 @@ const DEFAULT = () => ({
   cycleStart:null, deloadWeeks:[], deloadAsked:[], blocchiVisti:[],
   pa:0, paTot:0, skills:[], owned:["pugni","tuta","nessuno","niente"],
   equip:{arma:"pugni", armatura:"tuta", artefatto:"nessuno", titolo:"niente"},
-  shields:0, weeks:[], exCount:{}, restAdj:0,
+  shields:0, weeks:[], exCount:{}, restAdj:0, tune:{},
   goalWeight:null, xp:0, level_:1, sessions:0, totalSets:0,
   stats:{FOR:0,RES:0,AGI:0,VOL:0},
   streak:0, bestStreak:0, lastDay:null,
-  weights:[], log:[], ach:[],
+  weights:[], waist:[], log:[], ach:[], tests:[],
   cur:{key:null, done:{}},
   updatedAt:0
 });
@@ -1445,9 +1572,12 @@ function migrate(raw){
     stats:   Object.assign({FOR:0,RES:0,AGI:0,VOL:0}, raw.stats||{}),
     equip:   Object.assign({}, d.equip, raw.equip||{}),
     exCount: Object.assign({}, raw.exCount||{}),
+    tune:    Object.assign({}, raw.tune||{}),
     skills:  Array.isArray(raw.skills) ? raw.skills : [],
     owned:   (Array.isArray(raw.owned) && raw.owned.length) ? raw.owned : d.owned,
-    weeks:   Array.isArray(raw.weeks) ? raw.weeks : []
+    weeks:   Array.isArray(raw.weeks) ? raw.weeks : [],
+    waist:   Array.isArray(raw.waist) ? raw.waist : [],
+    tests:   Array.isArray(raw.tests) ? raw.tests : []
   });
   if(!out.paTot){
     const arretrati = 3*Math.max(0,(out.level_||1)-1) + (out.ach||[]).length;
@@ -1528,8 +1658,14 @@ function repOf(ex){
     r = ex.u === "s" ? Math.round(r*0.85) : Math.round(r*0.8);
     r = Math.max(ex.u === "s" ? 10 : 3, r);
   }
+  const t = tuneOf(ex.n);
+  if(t !== 1) r = Math.max(ex.u === "s" ? 10 : 3, Math.round(r*t));
   return r;
 }
+/* Taratura per esercizio: "facile" alza le ripetizioni del 10%, "durissimo"
+   le abbassa. Il tetto e' -40%/+40%: oltre, il problema non e' il numero di
+   ripetizioni ma il livello o la variante scelta. */
+function tuneOf(n){ const t = S.tune && S.tune[n]; return (t && t>0) ? t : 1; }
 
 // Il recupero si allunga con l'eta': la capacita' di ripristino fra le serie
 // cala, e tagliarlo corto peggiora la qualita' delle serie successive.
@@ -1588,6 +1724,44 @@ function activeEx(day){
     usati.add(e.n); out.push({ex:e, i:o.i});
   });
   out.sort((a,b)=>a.i-b.i);
+  return applySwap(day, out);
+}
+/* Sostituzioni decise a mano durante la sessione: vivono in S.cur, quindi
+   spariscono quando la seduta cambia. Si applicano solo al giorno aperto,
+   perche' sono indicizzate sulla posizione dell'esercizio. */
+function applySwap(day, list){
+  const sw = S.cur && S.cur.swap;
+  if(!sw || day !== dayObj(currentDayIdx())) return list;
+  return list.map(o=>{
+    const a = sw[o.i]; if(!a) return o;
+    return {i:o.i, ex:{n:a.n, r:a.r, u:a.u||undefined, st:o.ex.st, t:a.t, swapped:true, base:o.ex.n}};
+  });
+}
+
+// Indice piatto di tutti gli esercizi del database, costruito una volta sola.
+let DB_EX = null;
+function dbEx(){
+  if(DB_EX) return DB_EX;
+  DB_EX = {};
+  Object.keys(PROG).forEach(pr=>PROG[pr].days.forEach(d=>d.ex.forEach(e=>{ if(!DB_EX[e.n]) DB_EX[e.n]=e; })));
+  return DB_EX;
+}
+/* Alternative per un esercizio, dalla piu' pertinente alla piu' generica:
+   1. le varianti gia' scritte per quel movimento  2. esercizi con lo stesso
+   ruolo statistico  3. le riserve delle limitazioni dichiarate.
+   Esclude tutto cio' che e' gia' presente nella seduta. */
+function candidati(o, day){
+  const usati = new Set(activeEx(day).map(x=>x.ex.n));
+  const out = [], visti = new Set([o.ex.n, o.ex.base]);
+  const add = (n,r,u,t,g)=>{
+    if(!n || visti.has(n) || usati.has(n) || out.length>=5) return;
+    visti.add(n); out.push({n:n, r:r, u:u||null, t:t, g:g});
+  };
+  const m = ALT[o.ex.base || o.ex.n];
+  if(m) Object.keys(m).forEach(L=>{ const a=m[L]; if(a) add(a[0],a[1],a[2],a[3],"più gentile"); });
+  const db = dbEx();
+  Object.keys(db).forEach(n=>{ const e=db[n]; if(e.st===o.ex.st) add(e.n,e.r,e.u,e.t,"stesso ruolo"); });
+  activeLimits().forEach(L=>(RISERVE[L]||[]).forEach(a=>add(a[0],a[1],a[2],a[3],"riserva sicura")));
   return out;
 }
 function totalSets(day){ return activeEx(day).length * setsOf(day); }
@@ -1871,10 +2045,35 @@ window.startRitmo = function(){
   tick(); mHandle = setInterval(tick, 80);
 };
 function stopRitmo(){ clearInterval(mHandle); mHandle = null; }
+/* Su iOS un AudioContext creato fuori da un tocco nasce sospeso e resta muto
+   per sempre: il beep di fine recupero non suonava sul telefono. Qui il
+   contesto e' uno solo, sbloccato al primo tocco della pagina con un buffer
+   silenzioso — l'unica cosa che Safari accetta come "apertura" dell'audio. */
+let AC = null;
+function ac(){
+  const C = window.AudioContext||window.webkitAudioContext; if(!C) return null;
+  if(!AC){ try{ AC = new C(); }catch(e){ return null; } }
+  if(AC.state === "suspended"){ try{ AC.resume(); }catch(e){} }
+  return AC;
+}
+function sbloccaAudio(){
+  const c = ac(); if(!c) return;
+  try{
+    const b = c.createBuffer(1,1,22050), src = c.createBufferSource();
+    src.buffer = b; src.connect(c.destination); src.start(0);
+  }catch(e){}
+}
+["pointerdown","touchstart","keydown"].forEach(ev=>
+  document.addEventListener(ev, sbloccaAudio, {passive:true}));
+
+// Su Android sostituisce il suono quando il telefono e' in silenzioso.
+// Safari su iPhone non espone l'API: la chiamata e' innocua e non fa nulla.
+function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
 function beep2(){
   try{
-    const C = window.AudioContext||window.webkitAudioContext; if(!C) return;
-    const c = new C(), o=c.createOscillator(), g=c.createGain();
+    const c = ac(); if(!c) return;
+    const o=c.createOscillator(), g=c.createGain();
     o.type="triangle"; o.frequency.value=520; o.connect(g); g.connect(c.destination);
     g.gain.setValueAtTime(.0001,c.currentTime);
     g.gain.exponentialRampToValueAtTime(.12,c.currentTime+.01);
@@ -1884,9 +2083,10 @@ function beep2(){
 }
 
 function beep(){
+  buzz([120,80,120]);
   try{
-    const C = window.AudioContext||window.webkitAudioContext; if(!C) return;
-    const c = new C(), o=c.createOscillator(), g=c.createGain();
+    const c = ac(); if(!c) return;
+    const o=c.createOscillator(), g=c.createGain();
     o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(c.destination);
     g.gain.setValueAtTime(.0001,c.currentTime);
     g.gain.exponentialRampToValueAtTime(.25,c.currentTime+.02);
@@ -1896,32 +2096,55 @@ function beep(){
 }
 
 /* ---------- 6. NOTIFICHE DI SISTEMA ------------------------ */
-function sysBox(html){ $("ovBox").innerHTML = html; $("ov").classList.add("on"); }
+/* ovBox e' riusato da tutte le finestre: senza azzerare lo scorrimento, la
+   finestra successiva si apriva alla posizione lasciata dalla precedente e
+   il titolo restava sopra il bordo. */
+function sysBox(html){
+  const b = $("ovBox"), o = $("ov");
+  b.innerHTML = html;
+  o.classList.add("on");
+  // l'azzeramento va fatto dopo che la finestra e' visibile: su un elemento
+  // ancora nascosto il browser ignora l'assegnazione e resta il valore vecchio
+  b.scrollTop = 0; o.scrollTop = 0;
+}
 function closeOv(){ $("ov").classList.remove("on"); }
 
 function notifyLevel(levels, newAch, settimana){
   const [ , letter, color] = rankOf(S.level_);
   let h = '<div class="stt">Notifica di sistema</div><div class="rule"></div>';
+  let ritardo = 0;
   if(levels>0){
-    h += '<div class="lbl" style="text-align:center">Livello aumentato</div>';
-    h += '<div class="lvlnum">'+S.level_+'</div>';
-    h += '<div class="lbl" style="text-align:center;margin-top:10px;color:'+color+'">Rango '+letter+'</div>';
+    const prima = Math.max(1, S.level_ - levels);
+    h += '<div class="lbl" style="text-align:center">Livello aumentato</div>'
+      + '<div class="lvup"><div class="lvup-scena">'
+      + '<svg class="lvup-hex" viewBox="0 0 158 158" aria-hidden="true"><path d="M79 4 L153 41 L153 117 L79 154 L5 117 L5 41 Z"/></svg>'
+      + '<span class="lvup-onda"></span><span class="lvup-onda d2"></span>'
+      + '<div class="lvup-num" id="lvNum" data-a="'+prima+'" data-b="'+S.level_+'">'+prima+'</div>'
+      + '</div></div>'
+      + '<div class="lbl" style="text-align:center;margin-top:6px;color:'+color+'">Rango '+letter+'</div>';
+    ritardo = .7;
   }
   if(newAch.length){
     h += '<div class="rule"></div><div class="lbl" style="margin-bottom:8px">Traguardi sbloccati</div>';
-    newAch.forEach(a=>{ h += '<div style="border-left:2px solid var(--gold);padding:6px 0 6px 10px;margin-bottom:8px"><div style="font-family:\'Chakra Petch\';font-weight:600;font-size:14px">'+esc(a.n)+'</div><div class="extip" style="margin:2px 0 0">'+esc(a.d)+'</div></div>'; });
+    // entrano uno alla volta: il traguardo si legge, non si subisce in blocco
+    newAch.forEach(a=>{
+      ritardo += .16;
+      h += '<div class="lvIn" style="animation-delay:'+ritardo.toFixed(2)+'s;border-left:2px solid var(--gold);padding:6px 0 6px 10px;margin-bottom:8px"><div style="font-family:\'Chakra Petch\';font-weight:600;font-size:14px">'+esc(a.n)+'</div><div class="extip" style="margin:2px 0 0">'+esc(a.d)+'</div></div>';
+    });
   }
   if(shieldUsed){
     h += '<div class="rule"></div><div class="extip" style="margin:0;text-align:center"><span class="gem"></span>'
       + 'Scudo consumato: lo streak ha retto al giorno saltato. Ne restano '+S.shields+'.</div>';
   }
   if(settimana){
-    h += '<div class="rule"></div><div class="impact" style="text-align:center;color:var(--ok);font-size:17px">Settimana completa</div>'
+    ritardo += .18;
+    h += '<div class="rule"></div><div class="impact lvIn" style="animation-delay:'+ritardo.toFixed(2)+'s;text-align:center;color:var(--ok);font-size:17px">Settimana completa</div>'
       + '<div class="extip" style="text-align:center;margin:6px 0 0">+2 Punti Abilita\''+(has("scudo")?" e uno scudo ricaricato":"")+'</div>';
   }
   if(paLog.length){
     const tot = paLog.reduce((a,b)=>a+b.n,0);
-    h += '<div class="rule"></div><div style="text-align:center"><span class="lbl">[ Punti abilita\' ]</span>'
+    ritardo += .18;
+    h += '<div class="rule"></div><div class="lvIn" style="animation-delay:'+ritardo.toFixed(2)+'s;text-align:center"><span class="lbl">[ Punti abilita\' ]</span>'
       + '<div class="lvlnum" style="font-size:56px;margin-top:2px">+'+tot+'</div>'
       + '<div class="extip" style="margin:6px 0 0">Totale disponibile: '+S.pa+' — spendili nella Scheda</div></div>';
     paLog = [];
@@ -1930,8 +2153,25 @@ function notifyLevel(levels, newAch, settimana){
     h += '<div class="rule"></div><div class="lbl" style="margin-bottom:7px">[ Registro dell\'ombra ]</div>'
       + '<input type="text" id="notaSess" maxlength="90" placeholder="Com\'è andata? (facoltativo)">';
   }
-  h += '<button class="btn" style="margin-top:18px" onclick="chiudiNota()">Accetta</button>';
+  h += bloccoTaratura(fbCoda) + '<button class="btn" style="margin-top:18px" onclick="chiudiNota()">Accetta</button>';
+  fbCoda = null;
   sysBox(h);
+  const num = $("lvNum");
+  if(num) contaSu(num);
+}
+
+/* Il numero sale invece di apparire: il livello guadagnato si vede
+   accadere. Con prefers-reduced-motion attivo si scrive e basta. */
+function contaSu(el){
+  const a = +el.dataset.a, b = +el.dataset.b;
+  if(!(b > a) || window.matchMedia("(prefers-reduced-motion: reduce)").matches){ el.textContent = b; return; }
+  const t0 = Date.now(), dur = 300 + 240*(b-a);
+  const tick = ()=>{
+    const k = Math.min(1, (Date.now()-t0)/dur);
+    el.textContent = Math.round(a + (b-a)*(1-Math.pow(1-k,3)));
+    if(k < 1) requestAnimationFrame(tick); else el.textContent = b;
+  };
+  requestAnimationFrame(tick);
 }
 
 /* ---------- 7. RENDER -------------------------------------- */
@@ -1954,12 +2194,25 @@ function applyTheme(){
   document.querySelectorAll("#segTheme button").forEach(b=>b.classList.toggle("on", b.dataset.t===S.theme));
 }
 
+let xpRingLen = 0;
 function paintHeader(){
   const [ , letter, color] = rankOf(S.level_);
   const b = $("rankBadge"); b.firstElementChild.textContent = letter;
   const au = auraColor();
-  b.style.color = au.col === "var(--neutral)" ? color : au.col;
+  const tinta = au.col === "var(--neutral)" ? color : au.col;
+  b.style.color = tinta;
   b.classList.add("aura"); b.classList.toggle("full", !!au.full);
+  // l'anello esagonale porta la percentuale di XS verso il livello successivo
+  const ring = $("xpRing"), wrap = ring && ring.closest(".rankwrap");
+  if(ring){
+    if(!xpRingLen) xpRingLen = ring.getTotalLength() || 200;
+    const q = Math.min(1, S.xp / xpNeeded(S.level_));
+    wrap.style.color = tinta;
+    ring.style.strokeDasharray = xpRingLen;
+    ring.style.strokeDashoffset = xpRingLen * (1 - q);
+  }
+  const rl = $("hRank");
+  if(rl){ rl.textContent = "Rango " + letter; rl.style.color = tinta; }
   const ti = gearItem("titolo", S.equip.titolo);
   const tEl = $("hTitle");
   if(ti && ti.id !== "niente"){ tEl.hidden = false; tEl.textContent = ti.n; tEl.style.color = ti.col; }
@@ -1968,7 +2221,6 @@ function paintHeader(){
   $("hLvl").textContent = S.level_;
   const need = xpNeeded(S.level_);
   $("hXp").textContent = S.xp+" / "+need+" XP";
-  $("xpFill").style.width = Math.min(100, S.xp/need*100)+"%";
 }
 
 function paintStatus(){
@@ -2010,8 +2262,14 @@ function paintStatus(){
     $("wDelta").style.color = Math.abs(d)<0.5 ? "var(--ok)" : "var(--gold)";
     const start = S.weights[0].kg, span = start - S.goalWeight;
     const pct = span!==0 ? Math.max(0,Math.min(100,(start-last.kg)/span*100)) : 0;
-    $("wProg").textContent = span!==0 ? "Percorso completato: "+pct.toFixed(0)+"% · da "+start.toFixed(1)+" kg" : "";
-  } else { $("wDelta").textContent="—"; $("wProg").textContent=""; }
+    $("wProg").innerHTML = span!==0
+      ? '<div class="wtrack"><div class="wfill" style="width:'+pct.toFixed(1)+'%"></div>'
+        + '<div class="wmark" style="left:calc('+pct.toFixed(1)+'% - 1px)"></div></div>'
+        + '<div class="wends"><span class="lbl">Partenza ' + start.toFixed(1) + '</span>'
+        + '<span class="lbl" style="color:var(--sys)">' + pct.toFixed(0) + '% del percorso</span>'
+        + '<span class="lbl">Obiettivo ' + S.goalWeight.toFixed(1) + '</span></div>'
+      : "";
+  } else { $("wDelta").textContent="—"; $("wProg").innerHTML=""; }
 
   // richiamo: quanto manca al prossimo allenamento, e quanti ne hai saltati
   const rch = $("richiamo");
@@ -2065,6 +2323,10 @@ function paintStatus(){
   document.querySelectorAll("#segProg button").forEach(b=>b.classList.toggle("on", b.dataset.p===S.program));
   document.querySelectorAll("#segLvl button").forEach(b=>b.classList.toggle("on", b.dataset.l===S.level));
   $("lvlDesc").textContent = LEVELS[S.level].desc;
+  const tl = (S.tests||[])[ (S.tests||[]).length-1 ];
+  $("testRiep").textContent = tl
+    ? "Ultimo test " + tl.d.slice(8,10)+"/"+tl.d.slice(5,7) + " · " + tl.push + " push-up · " + tl.squat + " squat · " + tl.plank + "s di plank → livello " + tl.lv
+    : "Mai svolto. Tre prove al massimo assegnano il livello con un criterio invece che a occhio.";
   const rp = [];
   if(S.age) rp.push(S.age+" anni");
   if(S.sex) rp.push({m:"uomo",f:"donna",x:"sesso non specificato"}[S.sex]);
@@ -2229,10 +2491,7 @@ function paintTrain(){
     const n = setsOf(d), dn = S.cur.done[ei]||[];
     const rep = repOf(ex);
     const unit = ex.u==="s" ? rep+"s" : rep+" rip";
-    const btns = Array.from({length:n},(_,si)=>
-      '<button class="setb'+(dn.includes(si)?" on":"")+'" onclick="toggleSet('+ei+','+si+')"'
-      + ' aria-pressed="'+(dn.includes(si)?"true":"false")+'"'
-      + ' aria-label="Serie '+(si+1)+' di '+n+' — '+esc(ex.n)+'">'+(si+1)+'</button>').join("");
+    const anello = anelloSerie(ei, dn.length, n, ex.n);
     return '<div class="ex'+(dn.length>=n?" full":"")+(ex.adapted?" adapted":"")+'" data-ex="'+ei+'">'
       + '<div class="exhd"><div class="exn">'+esc(ex.n)+'</div>'
       + '<div class="pill" style="color:'+(ex.adapted?"var(--crit)":"var(--dim)")+'">'+(ex.adapted?"ADATTATO":ex.st)+'</div></div>'
@@ -2249,23 +2508,50 @@ function paintTrain(){
                 ? '<button class="btn ghost sm" onclick="startRitmo()">Ritmo 3-1-1</button>' : '')
             + '</div>'
           : '')
-      + '<div class="sets">'+btns+'</div>'
+      + anello
       + '</div>';
   }).join("");
 }
 
 // Aggiornamento chirurgico dopo un tap: niente ricostruzione della lista.
+/* L'anello è insieme indicatore e comando: il cerchio si riempie di una
+   serie a ogni tocco, "annulla" toglie l'ultima registrata. */
+const RING_LEN = 2*Math.PI*26;
+function anelloSerie(ei, fatte, n, nome){
+  const q = n ? fatte/n : 0;
+  return '<div class="exring">'
+    + '<button class="ring" onclick="tapSerie('+ei+')"'
+    + ' aria-label="Registra una serie di '+esc(nome)+'. Completate '+fatte+' di '+n+'."'
+    + (fatte>=n ? ' disabled aria-disabled="true"' : '') + '>'
+    + '<svg viewBox="0 0 60 60" aria-hidden="true"><circle class="rtr" cx="30" cy="30" r="26"/>'
+    + '<circle class="rfr" cx="30" cy="30" r="26" style="stroke-dasharray:'+RING_LEN.toFixed(1)
+    + ';stroke-dashoffset:'+(RING_LEN*(1-q)).toFixed(1)+'"/></svg>'
+    + '<span class="rnum">'+fatte+'</span><span class="rtot">/'+n+'</span></button>'
+    + '<div class="ringinfo"><span class="ringtxt">'
+    + (fatte>=n ? "Esercizio completato" : (fatte ? "Serie completate" : "Tocca dopo ogni serie"))
+    + '</span>'
+    + (fatte ? '<button class="btn ghost sm" style="flex:none;padding:7px 12px" onclick="undoSerie('+ei+')">Annulla</button>' : '')
+    + '</div></div>';
+}
+window.tapSerie = function(ei){
+  const d = dayObj(currentDayIdx()), n = setsOf(d), dn = S.cur.done[ei]||[];
+  if(dn.length >= n) return;
+  for(let k=0;k<n;k++) if(dn.indexOf(k) < 0){ toggleSet(ei, k); return; }
+};
+window.undoSerie = function(ei){
+  const dn = (S.cur.done[ei]||[]).slice().sort((a,b)=>a-b);
+  if(dn.length) toggleSet(ei, dn[dn.length-1]);
+};
+
 function syncSetUI(ei){
   const i = currentDayIdx(), d = dayObj(i);
   const n = setsOf(d), dn = S.cur.done[ei]||[];
   const card = document.querySelector('#exList .ex[data-ex="'+ei+'"]');
   if(card){
     card.classList.toggle("full", dn.length>=n);
-    card.querySelectorAll(".setb").forEach((btn,si)=>{
-      const on = dn.includes(si);
-      btn.classList.toggle("on", on);
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-    });
+    const box = card.querySelector(".exring");
+    const nome = (card.querySelector(".exn")||{}).textContent || "";
+    if(box) box.outerHTML = anelloSerie(ei, dn.length, n, nome);
   }
   const tot = totalSets(d), done = doneCount(i);
   $("trProg").style.width = (tot ? done/tot*100 : 0)+"%";
@@ -2389,6 +2675,7 @@ function paintWeight(){
     pv.hidden = false;
   } else pv.hidden = true;
 
+  paintGiro();
   $("chartBox").innerHTML = W.length>=2 ? (has("bilancia") ? chartPeso(W) : chartSVG(W)) : '<div class="empty">Registra almeno due pesate per vedere l\'andamento.</div>';
   $("wList").innerHTML = W.length ? W.slice().reverse().slice(0,20).map((w,idx,arr)=>{
     const prev = arr[idx+1];
@@ -2398,6 +2685,58 @@ function paintWeight(){
       + '<div class="logx" style="color:'+(dv===null?"var(--dimmer)":(dv<0?"var(--ok)":(dv>0?"var(--gold)":"var(--dimmer)")))+'">'
       + (dv===null?"—":(dv>0?"+":"")+dv.toFixed(1))+'</div></div>';
   }).join("") : '<div class="empty">Nessuna rilevazione.</div>';
+}
+
+/* Il girovita ha il suo pannello: scala diversa, unità diversa, e spesso
+   scende mentre la bilancia sta ferma — che è il momento in cui la gente
+   molla proprio perché guarda solo il peso. */
+function paintGiro(){
+  const V = Array.isArray(S.waist) ? S.waist : [];
+  $("gN").textContent = V.length;
+  if(V.length){
+    const ultimo = V[V.length-1];
+    $("gLast").textContent = ultimo.cm.toFixed(1);
+    const cutoff = Date.now()-30*864e5;
+    const old = V.filter(w=>new Date(w.d).getTime()<=cutoff).pop() || V[0];
+    const dv = ultimo.cm - old.cm;
+    $("gVar").textContent = V.length>1 ? (dv>0?"+":"")+dv.toFixed(1) : "—";
+    $("gVar").style.color = dv<0 ? "var(--ok)" : (dv>0 ? "var(--gold)" : "var(--txt)");
+  } else { $("gLast").textContent="—"; $("gVar").textContent="—"; }
+  $("giroBox").innerHTML = V.length>=2
+    ? chartGiro(V)
+    : '<div class="empty">'+(V.length
+        ? "Una sola misura. Serve la seconda per vedere una direzione."
+        : "Nessuna misura. Il girovita è l'indicatore più stabile della ricomposizione: spesso cala mentre il peso resta fermo.")+'</div>';
+}
+
+function chartGiro(V){
+  const pts = V.slice(-40);
+  const w=360,h=150,pl=32,pr=8,pt=14,pb=22;
+  const xs = i => pl + (pts.length===1?0:i*(w-pl-pr)/(pts.length-1));
+  const vals = pts.map(p=>p.cm);
+  let mn=Math.min(...vals), mx=Math.max(...vals);
+  const pad=(mx-mn)*0.22 || 1.5; mn-=pad; mx+=pad;
+  const ys = v => pt + (mx-v)/(mx-mn)*(h-pt-pb);
+  const col = cssv("--ok");
+  const line = pts.map((p,i)=>(i?"L":"M")+xs(i).toFixed(1)+" "+ys(p.cm).toFixed(1)).join(" ");
+  const area = line+" L"+xs(pts.length-1).toFixed(1)+" "+(h-pb)+" L"+xs(0).toFixed(1)+" "+(h-pb)+" Z";
+  let grid="";
+  for(let i=0;i<=2;i++){
+    const v = mx-(mx-mn)*i/2, y=ys(v);
+    grid += '<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(w-pr)+'" y2="'+y.toFixed(1)+'" stroke="'+cssv("--grid")+'" stroke-width="1"/>'
+         +  '<text x="4" y="'+(y+3).toFixed(1)+'">'+v.toFixed(1)+'</text>';
+  }
+  const lx=xs(pts.length-1), ly=ys(pts[pts.length-1].cm);
+  return '<svg class="chart" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Andamento del girovita in centimetri">'
+    + '<defs><linearGradient id="ggr" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="'+col+'" stop-opacity=".30"/><stop offset="100%" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
+    + grid
+    + '<path d="'+area+'" fill="url(#ggr)"/>'
+    + '<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+    + '<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="4" fill="'+cssv("--void")+'" stroke="'+col+'" stroke-width="2"/>'
+    + '<text x="'+pl+'" y="'+(h-6)+'">'+pts[0].d.slice(5).replace("-","/")+'</text>'
+    + '<text x="'+(w-pr)+'" y="'+(h-6)+'" text-anchor="end">'+pts[pts.length-1].d.slice(5).replace("-","/")+' · cm</text>'
+    + '</svg>';
 }
 
 function chartSVG(W){
@@ -2507,7 +2846,8 @@ function treeSVG(br){
   return '<svg class="tree" viewBox="0 0 300 '+T.h+'" role="group" aria-label="Ramo '+esc(B.n)+'">'
     + linee + nodi + '</svg>';
 }
-let sheetSel = null;
+let sheetSel = null, treeTab = "FOR";
+window.setTreeTab = function(k){ treeTab = k; paintSheet(); };
 window.pickSkill = function(k){
   const sk = SKILLS[k]; if(!sk) return;
   sheetSel = k; paintSheet();
@@ -2552,11 +2892,19 @@ function paintSheet(){
 
   // sagoma
   // albero grafico
-  $("treeBox").innerHTML = Object.keys(BRANCH).map(br=>{
-    const B = BRANCH[br];
-    return '<div class="branch"><div class="branch-t"><b style="color:'+B.c+'">'+esc(B.n)+'</b><span>'+esc(B.s)+'</span></div>'
-      + treeSVG(br)+'</div>';
-  }).join("");
+  // un ramo per volta: i tre alberi impilati erano duemila pixel di scorrimento
+  if(!BRANCH[treeTab]) treeTab = Object.keys(BRANCH)[0];
+  const B = BRANCH[treeTab];
+  $("treeBox").innerHTML = '<div class="seg treetabs">'
+    + Object.keys(BRANCH).map(br=>{
+        const on = br === treeTab;
+        return '<button class="'+(on?"on":"")+'" onclick="setTreeTab(\''+br+'\')"'
+          + (on ? ' style="color:'+BRANCH[br].c+';box-shadow:inset 0 -2px 0 '+BRANCH[br].c+';background:color-mix(in srgb, '+BRANCH[br].c+' 13%, transparent)" aria-current="true"' : '')
+          + '>'+esc(BRANCH[br].n)+'</button>';
+      }).join("")
+    + '</div>'
+    + '<div class="branch"><div class="branch-t" style="margin-top:0"><b style="color:'+B.c+'">'+esc(B.n)+'</b><span>'+esc(B.s)+'</span></div>'
+    + treeSVG(treeTab)+'</div>';
 
   // dettaglio del nodo selezionato
   const det = $("skillDet");
@@ -2660,6 +3008,14 @@ function costruisciPassi(dayIdx){
       }
     });
   }
+  // La pausa che segue l'ultima serie di un esercizio e' il momento naturale
+  // per chiedere com'e' andata: non costa una schermata in piu'.
+  const ultimoDi = {};
+  out.forEach((x,k)=>{ if(!x.riposo) ultimoDi[x.i] = k; });
+  Object.keys(ultimoDi).forEach(i=>{
+    const k = ultimoDi[i], nx = out[k+1];
+    if(nx && nx.riposo) nx.chiedi = out[k].ex.n;
+  });
   return out;
 }
 function passoFatto(p){ return p.riposo ? false : (S.cur.done[p.i]||[]).indexOf(p.set) >= 0; }
@@ -2703,6 +3059,16 @@ window.completaPasso = function(){
 };
 window.saltaPasso = function(){ clearInterval(gTimer); gTimer=null; vaiAvanti(); };
 
+const STATCOL = {FOR:"var(--sys)", RES:"var(--ok)", AGI:"var(--shadow)", VOL:"var(--gold)"};
+/* I pallini dicono a colpo d'occhio quante serie di QUESTO esercizio sono
+   chiuse: la barra in alto misura la sessione, questi misurano l'esercizio. */
+function dotsSerie(i, n, cur){
+  const done = S.cur.done[i] || [];
+  let h = '<div class="g-dots" role="img" aria-label="Serie di questo esercizio: '+done.length+' di '+n+'">';
+  for(let k=0;k<n;k++) h += '<span class="'+(done.indexOf(k)>=0 ? "on" : (k===cur ? "now" : ""))+'"></span>';
+  return h+'</div>';
+}
+
 function prossimoEsercizio(){
   for(let k=gIdx+1; k<gPassi.length; k++) if(!gPassi[k].riposo) return gPassi[k];
   return null;
@@ -2732,6 +3098,7 @@ function disegnaPasso(){
           + (pr.giro ? ' · giro '+pr.giro : ' · serie '+pr.serie)
           + (pr.ex.u==="s" ? ' · '+repOf(pr.ex)+'s' : ' · '+repOf(pr.ex)+' rip')+'</div>'
         : '<div class="g-next">Ultima serie fatta</div>')
+      + bloccoTaratura(p.chiedi)
       + '</div>'
       + '<div class="g-azioni">'
       + '<button class="btn" onclick="saltaPasso()">'+(p.breve ? "Sono pronto" : "Salta il recupero")+'</button>'
@@ -2745,24 +3112,35 @@ function disegnaPasso(){
   const rep = repOf(p.ex);
   const aTempo = p.ex.u === "s";
   const etichetta = p.giro ? "Giro "+p.giro+" di "+p.giri : "Serie "+p.serie+" di "+p.serieTot;
+  const nSerie = setsOf(dayObj(currentDayIdx()));
+  const fatteQui = (S.cur.done[p.i]||[]).length;
+  const pr = prossimoEsercizio();
+  const C = 2*Math.PI*52, q = nSerie ? fatteQui/nSerie : 0;
 
   box.innerHTML = '<div class="g-top"><span class="lbl">Serie '+fatti+' di '+tot+'</span>'
     + '<button class="g-esci" onclick="esciGuida()" aria-label="Esci dalla guida">✕</button></div>'
     + '<div class="g-barra"><div style="width:'+pct+'%"></div></div>'
     + '<div class="g-centro">'
-    + '<div class="lbl" style="color:var(--sys)">'+esc(etichetta)+'</div>'
+    + '<div class="g-eti"><span class="g-stat" style="color:'+STATCOL[p.ex.st]+'">'+esc(p.ex.st)+'</span>'
+    +   '<span class="lbl" style="color:var(--sys)">'+esc(etichetta)+'</span></div>'
     + '<div class="g-nome">'+esc(p.ex.n)+'</div>'
-    + (p.ex.adapted ? '<div class="exsub" style="text-align:center">al posto di '+esc(p.ex.base)+'</div>' : '')
-    + (aTempo ? '' : '<div class="g-target">'+rep+'<span>ripetizioni</span></div>')
-    + (aTempo
-        ? '<div class="g-cerchio"><svg viewBox="0 0 120 120"><circle class="g-tr" cx="60" cy="60" r="52"/>'
-          + '<circle class="g-fr" id="gArc" cx="60" cy="60" r="52"/></svg>'
-          + '<div class="g-num" id="gNum">'+rep+'</div></div>'
-        : '')
+    + (p.ex.adapted || p.ex.swapped
+        ? '<div class="exsub" style="text-align:center;margin:-6px 0 0">'+(p.ex.swapped?"scelto da te ":"")+'al posto di '+esc(p.ex.base)+'</div>' : '')
+    + '<div class="g-cerchio grande">'
+    +   '<svg viewBox="0 0 120 120" aria-hidden="true"><circle class="g-tr" cx="60" cy="60" r="52"/>'
+    +   '<circle class="g-fr"'+(aTempo?' id="gArc"':'')+' cx="60" cy="60" r="52"'
+    +   (aTempo ? '' : ' style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+(C*(1-q)).toFixed(1)+'"')+'/></svg>'
+    +   '<div class="g-inner"><div class="g-num"'+(aTempo?' id="gNum"':'')+'>'+rep+'</div>'
+    +   '<div class="g-unit">'+(aTempo ? "secondi" : "ripetizioni")+'</div></div>'
+    + '</div>'
+    + dotsSerie(p.i, nSerie, p.set)
     + '<div class="g-tip">'+esc(p.ex.t)+'</div>'
+    + (pr ? '<div class="g-next">Poi: <strong>'+esc(pr.ex.n)+'</strong></div>'
+          : '<div class="g-next">Ultima serie della sessione</div>')
     + '</div>'
     + '<div class="g-azioni">'
     + '<button class="btn gold" onclick="completaPasso()">'+(aTempo ? "Fatto" : "Completato")+'</button>'
+    + '<button class="btn ghost sm" onclick="apriCambio()">Cambia</button>'
     + '<button class="btn ghost sm" onclick="saltaPasso()">Salta</button>'
     + (has("ritmo") && !aTempo ? '<button class="btn ghost sm" onclick="startRitmo()">Ritmo</button>' : '')
     + '</div>';
@@ -2773,6 +3151,156 @@ function disegnaPasso(){
 // Il cambio esercizio nel circuito non e' un recupero: e' il tempo di
 // spostarsi e riposizionarsi. Un terzo del recupero pieno, fra 15 e 30 s.
 function transitFor(){ return Math.max(15, Math.min(30, Math.round(restFor()/3))); }
+
+/* "Oggi questo non posso farlo": sostituzione immediata, valida fino alla
+   fine della seduta. Le serie gia' registrate restano contate. */
+window.apriCambio = function(){
+  const p = gPassi[gIdx]; if(!p || p.riposo) return;
+  const d = dayObj(currentDayIdx());
+  const c = candidati(p, d);
+  if(!c.length){ toast("Per questo esercizio non ho alternative libere in questa seduta."); return; }
+  window.__cand = c;
+  sysBox('<div class="stt">Cambia esercizio</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Al posto di <strong style="color:var(--txt)">'+esc(p.ex.n)
+    + '</strong> per il resto della sessione. Le serie gi&agrave; fatte restano registrate.</div>'
+    + '<div style="margin-top:12px">'
+    + c.map((a,k)=>'<button class="gear can" style="border-color:var(--line)" onclick="scegliCambio('+k+')">'
+        + '<span class="gear-d" style="color:var(--sys)"></span>'
+        + '<span class="gear-n" style="color:var(--txt)">'+esc(a.n)
+        + '<span style="display:block;font-size:11px;color:var(--dim)">'+esc(a.t)+'</span></span>'
+        + '<span class="gear-c" style="color:var(--dimmer)">'+esc(a.g)+'</span></button>').join("")
+    + '</div><button class="btn ghost" style="margin-top:12px" onclick="closeOv()">Annulla</button>');
+};
+window.scegliCambio = function(k){
+  const a = (window.__cand||[])[k], p = gPassi[gIdx];
+  window.__cand = null;
+  if(!a || !p) { closeOv(); return; }
+  if(!S.cur.swap) S.cur.swap = {};
+  S.cur.swap[p.i] = {n:a.n, r:a.r, u:a.u||undefined, t:a.t};
+  closeOv(); save();
+  gPassi = costruisciPassi(currentDayIdx());
+  disegnaPasso();
+};
+
+let fbPend = null, fbCoda = null;
+function daChiedere(n){ return !!n && !((S.cur && S.cur.fb) || {})[n]; }
+function bloccoTaratura(n){
+  if(!daChiedere(n)) return "";
+  fbPend = n;
+  const t = tuneOf(n);
+  return '<div id="fbBox" style="margin-top:14px">'
+    + '<div class="lbl" style="margin-bottom:7px;text-align:center">Com\'&egrave; andato ' + esc(n)
+    + (t !== 1 ? ' <span style="color:var(--dimmer)">&middot; ora al '+Math.round(t*100)+'%</span>' : '') + '?</div>'
+    + '<div style="display:flex;gap:6px">'
+    + '<button class="btn ghost sm" style="flex:1" onclick="taratura(1)">Facile</button>'
+    + '<button class="btn ghost sm" style="flex:1" onclick="taratura(0)">Giusto</button>'
+    + '<button class="btn ghost sm" style="flex:1" onclick="taratura(-1)">Durissimo</button>'
+    + '</div></div>';
+}
+window.taratura = function(dir){
+  const n = fbPend; fbPend = null;
+  if(!n) return;
+  if(!S.tune) S.tune = {};
+  let msg = "Ripetizioni invariate.";
+  if(dir){
+    const nuovo = Math.max(.6, Math.min(1.4, Math.round((tuneOf(n) + dir*0.1)*100)/100));
+    S.tune[n] = nuovo;
+    msg = (dir>0 ? "Salgo" : "Scendo") + " del 10%: dalla prossima volta sar\u00e0 al "
+        + Math.round(nuovo*100) + "% del riferimento.";
+    if(nuovo === 1.4) msg = "Sei al tetto. Se \u00e8 ancora facile, il problema \u00e8 il livello, non le ripetizioni.";
+    if(nuovo === .6)  msg = "Sei al minimo. Se \u00e8 ancora troppo, cambia variante o scendi di livello.";
+  }
+  if(!S.cur.fb) S.cur.fb = {};
+  S.cur.fb[n] = dir;
+  save();
+  const el = $("fbBox");
+  if(el) el.innerHTML = '<div class="extip" style="margin:0;text-align:center;color:var(--ok)">'+esc(msg)+'</div>';
+};
+
+/* ---------- 4d. TEST DI VALUTAZIONE ------------------------
+   Tre movimenti che coprono spinta, gambe e core. Le soglie di
+   riferimento sono quelle correnti nella letteratura sui test a
+   corpo libero, corrette per sesso ed eta': un uomo di 25 anni e
+   una donna di 55 non possono condividere la stessa scala.      */
+const TEST = [
+  {k:"push",  n:"Push-up",     u:"ripetizioni", s:[10,25],
+   d:"Massime ripetizioni consecutive con tecnica pulita: corpo in linea, petto a un pugno da terra. Fermati quando il bacino cede, non quando bruciano le braccia."},
+  {k:"squat", n:"Squat",       u:"ripetizioni", s:[20,40],
+   d:"Massime ripetizioni a corpo libero, cosce almeno parallele al pavimento, talloni a terra. Fermati se la schiena si arrotonda."},
+  {k:"plank", n:"Plank",       u:"secondi",     s:[45,90],
+   d:"Tenuta massima sugli avambracci, bacino in linea con le spalle. Il tempo si ferma quando il bacino scende, non quando fa male."}
+];
+function fattoreTest(k){
+  let f = 1;
+  if(S.sex === "f") f *= (k === "push" ? 0.6 : k === "squat" ? 0.85 : 0.85);
+  const a = S.age || 0;
+  if(a >= 60) f *= 0.7; else if(a >= 50) f *= 0.8; else if(a >= 40) f *= 0.9;
+  return f;
+}
+function soglieTest(t){
+  const f = fattoreTest(t.k);
+  return [Math.max(2, Math.round(t.s[0]*f)), Math.max(4, Math.round(t.s[1]*f))];
+}
+function punteggioTest(t, v){ const s = soglieTest(t); return v >= s[1] ? 3 : (v >= s[0] ? 2 : 1); }
+
+window.apriTest = function(){
+  const prec = (S.tests||[])[ (S.tests||[]).length-1 ];
+  sysBox('<div class="stt">Test di valutazione</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Tre prove al massimo, con 3 minuti pieni di recupero fra una e l\'altra. Falle a freddo solo dopo un riscaldamento leggero, e interrompi qualunque prova che faccia male.</div>'
+    + TEST.map(t=>{
+        const s = soglieTest(t), pv = prec ? prec[t.k] : null;
+        return '<div class="field" style="margin-top:14px"><span class="lbl">'+esc(t.n)+' · '+t.u
+          + ' <span style="color:var(--dimmer)">(medio da '+s[0]+', élite da '+s[1]+')</span></span>'
+          + '<input type="number" inputmode="numeric" id="tst_'+t.k+'" placeholder="0"'+(pv?' value="'+pv+'"':'')+'>'
+          + '<div class="extip" style="margin:6px 0 0">'+esc(t.d)+'</div></div>';
+      }).join("")
+    + (prec ? '<div class="lbl" style="margin-top:14px">Ultimo test: '+esc(prec.d.slice(5).replace("-","/"))
+        + ' · '+prec.push+' / '+prec.squat+' / '+prec.plank+'s</div>' : '')
+    + '<button class="btn" style="margin-top:16px" onclick="calcolaTest()">Calcola il livello</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+};
+
+window.calcolaTest = function(){
+  const val = {};
+  for(const t of TEST){
+    const v = parseInt(($("tst_"+t.k)||{}).value, 10);
+    if(isNaN(v) || v < 0 || v > 999){ toast("Inserisci un numero per ognuna delle tre prove."); return; }
+    val[t.k] = v;
+  }
+  const punti = TEST.map(t=>punteggioTest(t, val[t.k]));
+  const media = punti.reduce((a,b)=>a+b,0)/punti.length;
+  // La prova piu' debole conta: un livello va retto in tutti e tre i movimenti.
+  const lv = media >= 2.7 && Math.min.apply(null,punti) >= 2 ? "S"
+           : media >= 1.7 && Math.min.apply(null,punti) >= 1 ? "C" : "E";
+  const prec = (S.tests||[])[ (S.tests||[]).length-1 ];
+  const rec = {d:todayISO(), push:val.push, squat:val.squat, plank:val.plank, lv:lv};
+  if(!Array.isArray(S.tests)) S.tests = [];
+  S.tests.push(rec); save();
+
+  const righe = TEST.map((t,i)=>{
+    const s = soglieTest(t), et = punti[i]===3?"élite":punti[i]===2?"medio":"base";
+    const col = punti[i]===3?"var(--gold)":punti[i]===2?"var(--sys)":"var(--dimmer)";
+    const delta = prec ? val[t.k]-prec[t.k] : null;
+    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--grid)">'
+      + '<span style="font-size:13px">'+esc(t.n)+'</span>'
+      + '<span class="mono" style="font-size:13px">'+val[t.k]+(t.k==="plank"?"s":"")
+      + (delta!==null ? ' <span style="color:'+(delta>0?"var(--ok)":delta<0?"var(--crit)":"var(--dimmer)")+'">'+(delta>0?"+":"")+delta+'</span>' : '')
+      + ' · <span style="color:'+col+'">'+et+'</span></span></div>';
+  }).join("");
+  const cambia = lv !== S.level;
+  sysBox('<div class="stt">Esito del test</div><div class="rule"></div>'
+    + righe
+    + '<div style="text-align:center;margin-top:16px"><span class="lbl">Livello suggerito</span>'
+    + '<div class="lvlnum" style="font-size:56px;margin:2px 0 4px">'+lv+'</div>'
+    + '<div class="lbl">'+esc(LEVELS[lv].name)+'</div></div>'
+    + '<div class="extip" style="margin-top:12px">'+esc(LEVELS[lv].desc)+'</div>'
+    + (cambia
+        ? '<button class="btn" style="margin-top:16px" onclick="applicaTest(&quot;'+lv+'&quot;)">Passa al livello '+lv+'</button>'
+          + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Resto sul livello '+S.level+'</button>'
+        : '<div class="extip" style="margin-top:12px;text-align:center;color:var(--ok)">È il livello che stai già usando.</div>'
+          + '<button class="btn" style="margin-top:12px" onclick="closeOv()">Chiudi</button>'));
+};
+window.applicaTest = function(lv){ S.level = lv; S.cur = {key:null, done:{}}; closeOv(); save(); render(); };
 
 window.regolaRiposo = function(d){
   gFine += d*1000; gTot = Math.max(10, gTot + d);
@@ -2842,12 +3370,9 @@ function completeSet(ei, si){
   arr.push(si);
   if(!S.cur.t0) S.cur.t0 = Date.now();   // la sessione parte alla prima serie
   S.totalSets++;
-  if(arr.length >= setsOf(d)){
-    const nome = (adapt(d.ex[ei])||{}).n;
-    if(nome) S.exCount[nome] = (S.exCount[nome]||0) + 1;
-  }
-  const ax = adapt(d.ex[ei]);
-  if(ax) S.stats[ax.st] += 1;
+  const vero = activeEx(d).find(x=>x.i===ei);   // tiene conto di adattamenti e scambi
+  if(vero && arr.length >= setsOf(d)) S.exCount[vero.ex.n] = (S.exCount[vero.ex.n]||0) + 1;
+  if(vero) S.stats[vero.ex.st] += 1;
   addXP(10 * LEVELS[S.level].mult);
   return true;
 }
@@ -2864,6 +3389,10 @@ function toggleSet(ei, si){
 function finishSession(){
   const i = currentDayIdx(), d = dayObj(i);
   const done = doneCount(), tot = totalSets(d);
+  const coda = activeEx(d);
+  // L'ultimo esercizio non ha una pausa dopo: il feedback finisce nel riepilogo.
+  const ultimoEx = coda.length && (S.cur.done[coda[coda.length-1].i]||[]).length
+    ? coda[coda.length-1].ex.n : null;
   if(done === 0){ toast("Completa almeno una serie prima di chiudere la sessione."); return; }
   const full = done >= tot;
   bumpStreak();
@@ -2876,6 +3405,7 @@ function finishSession(){
   const durMs = S.cur.t0 ? Date.now()-S.cur.t0 : 0;
   S.log.push({d:todayISO(), n:d.n, s:done, xp:Math.round(xp), ms:durMs});
   S.cur = {key:null, done:{}};
+  fbCoda = ultimoEx;
   const nw = checkAch();
   const settimana = checkWeek();
   save(); render(); stopRest();
@@ -2887,7 +3417,8 @@ function finishSession(){
     + '<div class="extip" style="margin:0">'+esc(d.n)+' · '+done+' serie'+(full?" · completata al 100%":"")+'<br>Streak: '+S.streak+' giorni</div></div>'
     + (has("registro") ? '<div class="rule"></div><div class="lbl" style="margin-bottom:7px">[ Registro dell\'ombra ]</div>'
         + '<input type="text" id="notaSess" maxlength="90" placeholder="Com\'è andata? (facoltativo)">' : '')
-    + '<button class="btn" style="margin-top:16px" onclick="chiudiNota()">Chiudi</button>'); }
+    + bloccoTaratura(fbCoda)
+    + '<button class="btn" style="margin-top:16px" onclick="chiudiNota()">Chiudi</button>'); fbCoda = null; }
   go("status");
 }
 
@@ -2898,12 +3429,23 @@ function toast(msg){
 
 function addWeight(){
   const v = parseFloat($("inW").value);
+  const g = parseFloat($("inG").value);
   const d = $("inWD").value || todayISO();
-  if(!v || v<25 || v>350){ toast("Inserisci un peso valido in chilogrammi."); return; }
-  const at = S.weights.findIndex(w=>w.d===d);
-  if(at>=0) S.weights[at].kg = v;
-  else { S.weights.push({d, kg:v}); S.weights.sort((a,b)=>a.d.localeCompare(b.d)); addXP(15); }
-  $("inW").value="";
+  const cmOk = !isNaN(g) && g>0;
+  if(cmOk && (g<40 || g>200)){ toast("Il girovita va indicato in centimetri, fra 40 e 200."); return; }
+  if((!v || v<25 || v>350) && !cmOk){ toast("Inserisci un peso valido in chilogrammi, o almeno il girovita."); return; }
+  if(v && v>=25 && v<=350){
+    const at = S.weights.findIndex(w=>w.d===d);
+    if(at>=0) S.weights[at].kg = v;
+    else { S.weights.push({d, kg:v}); S.weights.sort((a,b)=>a.d.localeCompare(b.d)); addXP(15); }
+  }
+  if(cmOk){
+    if(!Array.isArray(S.waist)) S.waist = [];
+    const ag = S.waist.findIndex(w=>w.d===d);
+    if(ag>=0) S.waist[ag].cm = g;
+    else { S.waist.push({d, cm:g}); S.waist.sort((a,b)=>a.d.localeCompare(b.d)); }
+  }
+  $("inW").value=""; $("inG").value="";
   const nw = checkAch();
   save(); render();
   if(nw.length) notifyLevel(0, nw);
@@ -3026,6 +3568,7 @@ document.querySelectorAll("#segLvl button").forEach(b=>b.addEventListener("click
   S.level=b.dataset.l; S.cur={key:null,done:{}}; save(); render();
 }));
 $("btnEdit").addEventListener("click",()=>profileForm(false));
+$("btnTest").addEventListener("click", apriTest);
 $("btnLim").addEventListener("click",()=>profileForm(false));
 $("btnGuida").addEventListener("click", avviaGuida);
 $("btnFinish").addEventListener("click", finishSession);
