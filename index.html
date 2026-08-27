@@ -593,6 +593,14 @@ body.bloccato{overflow:hidden}
 }
 .g-dots span.now{border-color:var(--gold);animation:battito 1.6s ease-in-out infinite}
 @keyframes battito{0%,100%{opacity:1;transform:rotate(45deg) scale(1)}50%{opacity:.45;transform:rotate(45deg) scale(.82)}}
+.g-reg{display:flex;align-items:center;gap:10px}
+.g-reg .btn.sm{flex:none;min-width:62px;padding:9px 12px}
+.g-reg .lbl{min-width:9.5em;text-align:center}
+.prrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid);width:100%;text-align:left}
+.prrow:last-child{border-bottom:none}
+.prn{flex:1;min-width:0;font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:13.5px}
+.prv{font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;font-size:21px;color:var(--gold);transform:skewX(-6deg);flex:none}
+.prd{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--dimmer);flex:none;width:3.6em;text-align:right}
 .g-unit{
   font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim);margin-top:-4px;
@@ -882,7 +890,12 @@ body.bloccato{overflow:hidden}
         </div>
         <div class="note" id="sugg" style="border-left-color:var(--sys)" hidden></div>
         <div class="extip" id="lvlDesc" style="margin-top:12px"></div>
-        <button class="btn ghost sm" id="btnTest" style="width:100%;margin-top:10px">Test di valutazione</button>
+        <div class="lbl" style="margin:16px 0 6px">Ritmo</div>
+        <div class="seg" id="segMant">
+          <button data-m="0">Piano pieno</button><button data-m="1">Mantenimento</button>
+        </div>
+        <div class="extip" id="mantDesc" style="margin-top:8px"></div>
+        <button class="btn ghost sm" id="btnTest" style="width:100%;margin-top:14px">Test di valutazione</button>
         <div class="lbl" style="margin-top:8px" id="testRiep"></div>
         <div class="lbl" style="margin-top:14px" id="profRiep"></div>
         <button class="btn ghost sm" id="btnEdit" style="width:100%;margin-top:8px">Modifica profilo</button>
@@ -903,6 +916,10 @@ body.bloccato{overflow:hidden}
         <div class="panel-t"><span>Ciclo in corso</span></div>
         <div id="cicloBox"></div>
       </div>
+      <div class="panel" id="pnlMant" hidden>
+        <div class="panel-t"><span>Mantenimento</span></div>
+        <div class="extip" style="margin:0" id="mantBanner"></div>
+      </div>
       <div class="panel">
         <div class="panel-t"><span>Piano settimanale</span></div>
         <div id="progHead" class="extip" style="margin:0 0 12px"></div>
@@ -911,6 +928,10 @@ body.bloccato{overflow:hidden}
       <div class="panel" id="pnlConsigli" hidden>
         <div class="panel-t"><span>Analisi del sistema</span></div>
         <div id="consBox"></div>
+      </div>
+      <div class="panel" id="pnlGiorni">
+        <div class="panel-t"><span>Aderenza per giorno</span></div>
+        <div id="giorniBox"></div>
       </div>
       <div class="panel">
         <div class="panel-t"><span>Regole del protocollo</span></div>
@@ -949,6 +970,10 @@ body.bloccato{overflow:hidden}
         <div class="extip">Misuralo una volta a settimana, appena sveglio, all'altezza dell'ombelico e senza tirare. Il peso oscilla di oltre un chilo al giorno per acqua e sale; il girovita no.</div>
         <button class="btn" id="btnW" style="margin-top:12px">Registra · +15 XP</button>
       </div>
+      <div class="panel" id="pnlSalute" hidden>
+        <div class="panel-t"><span>Salute</span></div>
+        <div id="saluteBox"></div>
+      </div>
       <div class="panel" id="pnlGiro">
         <div class="panel-t"><span>Girovita</span></div>
         <div id="giroBox"></div>
@@ -985,6 +1010,10 @@ body.bloccato{overflow:hidden}
       <div class="panel" id="pnlVento" hidden>
         <div class="panel-t"><span>Passo del vento</span></div>
         <div id="ventoBox"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-t"><span>Record personali</span></div>
+        <div id="prBox"></div>
       </div>
       <div class="panel">
         <div class="panel-t"><span>Registro sessioni</span></div>
@@ -1065,7 +1094,7 @@ body.bloccato{overflow:hidden}
 
 <script>
 "use strict";
-const APP_VERSION = "2.4.0";
+const APP_VERSION = "2.5.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -1413,8 +1442,13 @@ const RISERVE = {
 };
 
 const WEEK = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+const GIORNI = ["lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica"];
 // indice giorno settimana -> indice sessione (null = riposo)
 const SCHED = [0, 1, null, 2, 3, null, null];
+// Mantenimento: due sedute, martedì e venerdì. Il minimo che conserva
+// quello che hai costruito quando la settimana non lascia spazio.
+const SCHED_M = [null, 0, null, null, 2, null, null];
+const sched = () => S.mant ? SCHED_M : SCHED;
 const REST_LABEL = {2:"Riposo attivo · camminata 30–45 min", 5:"Riposo attivo · mobilità e camminata", 6:"Riposo totale · recupero"};
 const STAT_NAMES = {FOR:"Forza", RES:"Resistenza", AGI:"Agilità", VOL:"Volontà"};
 const RANKS = [[40,"S","var(--gold)"],[28,"A","var(--crit)"],[18,"B","var(--shadow)"],[10,"C","var(--sys)"],[5,"D","var(--ok)"],[1,"E","var(--neutral)"]];
@@ -1517,9 +1551,11 @@ const DEFAULT = () => ({
   age:null, sex:"", calib:true,
   limits:[], limitNote:"",
   cycleStart:null, deloadWeeks:[], deloadAsked:[], blocchiVisti:[],
+  mant:false, mantWeeks:[],
+  salute:{on:false, inNome:"Peso da Salute", outNome:"Allenamento Risveglio"},
   pa:0, paTot:0, skills:[], owned:["pugni","tuta","nessuno","niente"],
   equip:{arma:"pugni", armatura:"tuta", artefatto:"nessuno", titolo:"niente"},
-  shields:0, weeks:[], exCount:{}, restAdj:0, tune:{},
+  shields:0, weeks:[], exCount:{}, restAdj:0, tune:{}, reps:{}, pr:{},
   goalWeight:null, xp:0, level_:1, sessions:0, totalSets:0,
   stats:{FOR:0,RES:0,AGI:0,VOL:0},
   streak:0, bestStreak:0, lastDay:null,
@@ -1573,9 +1609,13 @@ function migrate(raw){
     equip:   Object.assign({}, d.equip, raw.equip||{}),
     exCount: Object.assign({}, raw.exCount||{}),
     tune:    Object.assign({}, raw.tune||{}),
+    reps:    Object.assign({}, raw.reps||{}),
+    pr:      Object.assign({}, raw.pr||{}),
     skills:  Array.isArray(raw.skills) ? raw.skills : [],
     owned:   (Array.isArray(raw.owned) && raw.owned.length) ? raw.owned : d.owned,
     weeks:   Array.isArray(raw.weeks) ? raw.weeks : [],
+    mantWeeks: Array.isArray(raw.mantWeeks) ? raw.mantWeeks : [],
+    salute:  Object.assign({}, d.salute, raw.salute||{}),
     waist:   Array.isArray(raw.waist) ? raw.waist : [],
     tests:   Array.isArray(raw.tests) ? raw.tests : []
   });
@@ -1639,11 +1679,11 @@ async function pushCloud(){
 function sessionKey(dayIdx){ return S.program+"|"+S.level+"|"+dayIdx+"|"+todayISO()+"|"+activeLimits().join(","); }
 function currentDayIdx(){
   if(S.cur.key){ const p=S.cur.key.split("|"); if(p[3]===todayISO()) return +p[2]; }
-  const s = SCHED[dowIndex()];
+  const s = sched()[dowIndex()];
   return s === null ? nextTrainingDay() : s;
 }
 function nextTrainingDay(){
-  for(let i=1;i<=7;i++){ const s=SCHED[(dowIndex()+i)%7]; if(s!==null) return s; }
+  for(let i=1;i<=7;i++){ const s=sched()[(dowIndex()+i)%7]; if(s!==null) return s; }
   return 0;
 }
 function dayObj(i){ return PROG[S.program].days[i]; }
@@ -1688,6 +1728,7 @@ function fcZona(){
 }
 function setsOf(day){
   const base = day.sets[S.level];
+  if(S.mant) return Math.max(2, base - 1);
   return inScarico() ? Math.max(2, Math.round(base*0.6)) : base;
 }
 
@@ -1795,7 +1836,9 @@ function lunediDi(iso){
 function cicloInfo(){
   if(!S.cycleStart) return null;
   const d1 = new Date(S.cycleStart+"T12:00:00"), oggi = new Date(todayISO()+"T12:00:00");
-  const sett = Math.max(0, Math.floor((oggi - d1)/(7*864e5)));
+  // Le settimane di mantenimento non consumano il ciclo: sono una pausa
+  // dichiarata, non un fallimento da contare.
+  const sett = Math.max(0, Math.floor((oggi - d1)/(7*864e5)) - (S.mantWeeks||[]).length);
   return {
     sett: (sett % 4) + 1,               // 1..4 dentro il ciclo
     ciclo: Math.floor(sett/4) % 3 + 1,  // 1..3 dentro il blocco
@@ -1803,7 +1846,7 @@ function cicloInfo(){
     tot: sett + 1                       // settimane dall'inizio
   };
 }
-function inScarico(){ return S.deloadWeeks.indexOf(isoWeek(todayISO())) >= 0; }
+function inScarico(){ return !S.mant && S.deloadWeeks.indexOf(isoWeek(todayISO())) >= 0; }
 
 // Aderenza sulle ultime due settimane: sessioni fatte su quelle previste.
 function aderenza(){
@@ -1811,9 +1854,40 @@ function aderenza(){
   for(let i=0;i<14;i++){
     const d = new Date(Date.now()-i*864e5);
     const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-    if(SCHED[(d.getDay()+6)%7] !== null){ previsti++; if(S.log.some(l=>l.d===iso)) fatti++; }
+    if(sched()[(d.getDay()+6)%7] !== null){ previsti++; if(S.log.some(l=>l.d===iso)) fatti++; }
   }
   return {previsti, fatti, pct: previsti ? fatti/previsti : 1};
+}
+
+/* Aderenza giorno per giorno sulle ultime N settimane. Serve a rispondere
+   a una domanda che la media non risponde: non "quanto salti", ma "quale
+   giorno salti". Le due cose hanno rimedi diversi. */
+function aderenzaGiorni(nSett){
+  const cal = sched(), oggi = new Date(todayISO()+"T12:00:00"), out = [];
+  for(let g=0; g<7; g++){
+    if(cal[g] === null) continue;
+    let prev = 0, fatti = 0;
+    for(let w=0; w<nSett; w++){
+      const lun = new Date(oggi);
+      lun.setDate(lun.getDate() - ((oggi.getDay()+6)%7) - w*7);
+      const d = new Date(lun); d.setDate(d.getDate()+g);
+      if(d.getTime() > oggi.getTime()) continue;
+      const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+      prev++;
+      if(S.log.some(l=>l.d===iso)) fatti++;
+    }
+    out.push({g:g, n:WEEK[g], prev:prev, fatti:fatti, pct: prev ? fatti/prev : 0});
+  }
+  return out;
+}
+// Il giorno debole vale un consiglio solo se ce n'è uno forte da cui spostarlo.
+function giornoDebole(){
+  const gg = aderenzaGiorni(8).filter(x=>x.prev >= 4);
+  if(gg.length < 2) return null;
+  const ord = gg.slice().sort((a,b)=>a.pct-b.pct);
+  const peggio = ord[0], meglio = ord[ord.length-1];
+  if(peggio.pct > 0.45 || meglio.pct < 0.7) return null;
+  return {peggio:peggio, meglio:meglio};
 }
 
 // Pendenza del peso in kg/settimana sulle ultime tre settimane.
@@ -1834,6 +1908,15 @@ function trendPeso(giorni){
 function consigli(){
   const out = [];
   const c = cicloInfo(), ad = aderenza();
+
+  const gd = giornoDebole();
+  if(gd){
+    out.push({t:"sys", n:"Il giorno storto",
+      d:"Nelle ultime otto settimane hai onorato il "+GIORNI[gd.peggio.g]+" "+Math.round(gd.peggio.pct*100)
+        +"% delle volte, contro il "+Math.round(gd.meglio.pct*100)+"% del "+GIORNI[gd.meglio.g]+". "
+        +"Non è disciplina: quel giorno, nella tua settimana, non c'è spazio. Sposta la seduta del "
+        +GIORNI[gd.peggio.g]+" al giorno libero più vicino, oppure accetta tre giorni e smetti di fallirne quattro."});
+  }
 
   if(ad.previsti >= 6 && ad.pct < 0.6){
     out.push({t:"crit", n:"Aderenza bassa",
@@ -1892,7 +1975,7 @@ function sessionsThisWeek(iso){
 function checkWeek(){
   const iso = todayISO(), w = isoWeek(iso);
   if(S.weeks.indexOf(w) >= 0) return false;
-  const soglia = has("grazia") ? 3 : 4;
+  const soglia = S.mant ? 2 : (has("grazia") ? 3 : 4);
   if(sessionsThisWeek(iso) < soglia) return false;
   S.weeks.push(w);
   grantPA(2, "settimana completa");
@@ -1961,6 +2044,8 @@ function bumpStreak(){
   const y = new Date(Date.now()-864e5);
   const yISO = new Date(y.getTime()-y.getTimezoneOffset()*6e4).toISOString().slice(0,10);
   if(S.lastDay === yISO){ S.streak++; }
+  // in mantenimento ci si allena ogni tre giorni: lo streak non si spezza
+  else if(S.mant && S.lastDay && daysBetween(S.lastDay, t) <= 4){ S.streak++; }
   else if(S.lastDay && S.shields > 0 && daysBetween(S.lastDay, t) === 2){
     S.shields--; S.streak++; shieldUsed = true;   // un solo giorno saltato: lo scudo lo assorbe
   }
@@ -2012,6 +2097,7 @@ async function keepAwake(on){
   } catch(e){ wl = null; }
 }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && curView==="train") keepAwake(true); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && attesaSalute) paintSalute(); });
 /* Metronomo dell'esecuzione: 3s in discesa, 1 di pausa, 1 in risalita.
    Rende dura una ripetizione senza aggiungere carico — la leva piu' utile
    a corpo libero quando le ripetizioni diventano troppe. */
@@ -2153,7 +2239,7 @@ function notifyLevel(levels, newAch, settimana){
     h += '<div class="rule"></div><div class="lbl" style="margin-bottom:7px">[ Registro dell\'ombra ]</div>'
       + '<input type="text" id="notaSess" maxlength="90" placeholder="Com\'è andata? (facoltativo)">';
   }
-  h += bloccoTaratura(fbCoda) + '<button class="btn" style="margin-top:18px" onclick="chiudiNota()">Accetta</button>';
+  h += bloccoPR() + bloccoTaratura(fbCoda) + bloccoSalute() + '<button class="btn" style="margin-top:18px" onclick="chiudiNota()">Accetta</button>';
   fbCoda = null;
   sysBox(h);
   const num = $("lvNum");
@@ -2175,7 +2261,7 @@ function contaSu(el){
 }
 
 /* ---------- 7. RENDER -------------------------------------- */
-function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintTrain(); paintWeight(); paintLog(); paintSheet(); paintNavBadge(); }
+function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintTrain(); paintWeight(); paintSalute(); paintLog(); paintPR(); paintSheet(); paintNavBadge(); }
 
 function applyTheme(){
   const r = document.documentElement;
@@ -2191,6 +2277,10 @@ function applyTheme(){
     }
     if(m) m.setAttribute("content", cssv("--void"));
   }, 0);
+  document.querySelectorAll("#segMant button").forEach(b=>b.classList.toggle("on", (b.dataset.m==="1")===!!S.mant));
+  $("mantDesc").innerHTML = S.mant
+    ? 'Due sedute a settimana, martedì e venerdì, con una serie in meno per esercizio. Lo streak regge fino a quattro giorni di distanza e <strong style="color:var(--txt)">queste settimane non consumano il ciclo</strong>: quando torni al piano pieno, riprendi dal punto in cui eri.'
+    : 'Quattro sedute a settimana. Se stai per attraversare un periodo pieno o un viaggio, passa al mantenimento invece di saltare: due sedute conservano quasi tutto, zero sedute no.';
   document.querySelectorAll("#segTheme button").forEach(b=>b.classList.toggle("on", b.dataset.t===S.theme));
 }
 
@@ -2234,7 +2324,7 @@ function paintStatus(){
   });
 
   // missione di oggi
-  const s = SCHED[dowIndex()];
+  const s = sched()[dowIndex()];
   const box = $("todayBox");
   if(s === null){
     box.innerHTML = '<div class="dttl" style="font-size:16px">'+esc(REST_LABEL[dowIndex()])+'</div>'
@@ -2277,13 +2367,13 @@ function paintStatus(){
     rch.hidden = false;
     const oggiIdx = dowIndex();
     let att = 0;
-    if(SCHED[oggiIdx] === null){ for(let i=1;i<=7;i++){ att = i; if(SCHED[(oggiIdx+i)%7] !== null) break; } }
+    if(sched()[oggiIdx] === null){ for(let i=1;i<=7;i++){ att = i; if(sched()[(oggiIdx+i)%7] !== null) break; } }
     // giorni di allenamento previsti nelle ultime due settimane, meno quelli fatti
     let previsti = 0, fatti = 0;
     for(let i=0;i<14;i++){
       const d = new Date(Date.now()-i*864e5);
       const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-      if(SCHED[(d.getDay()+6)%7] !== null){ previsti++; if(S.log.some(l=>l.d===iso)) fatti++; }
+      if(sched()[(d.getDay()+6)%7] !== null){ previsti++; if(S.log.some(l=>l.d===iso)) fatti++; }
     }
     const saltati = Math.max(0, previsti - fatti);
     rch.innerHTML = '<span class="lbl" style="color:var(--gold)">Richiamo del sistema</span>'
@@ -2435,6 +2525,13 @@ function controllaBlocco(){
 }
 
 function paintPlan(){
+  const pm = $("pnlMant");
+  if(pm){
+    pm.hidden = !S.mant;
+    if(S.mant) $("mantBanner").innerHTML = 'Sei in <strong style="color:var(--txt)">mantenimento</strong>: due sedute, volume ridotto di una serie, nessuno scarico proposto. '
+      + 'Settimane in mantenimento finora: <strong style="color:var(--txt)">'+(S.mantWeeks||[]).length+'</strong> — non contano nel ciclo. '
+      + 'Torna al piano pieno da <em>Stato → Configurazione → Ritmo</em> appena la settimana te lo permette.';
+  }
   const P = PROG[S.program];
   $("progHead").innerHTML = "<strong style=\"color:var(--sys);font-family:'Chakra Petch'\">"+esc(P.name)+"</strong> · "+esc(P.desc);
   let regole = P.rules + " Recupero previsto al livello "+S.level+": "+restFor()+" secondi";
@@ -2450,7 +2547,7 @@ function paintPlan(){
   $("rules").textContent = regole;
   const today = dowIndex();
   $("weekList").innerHTML = WEEK.map((w,i)=>{
-    const s = SCHED[i];
+    const s = sched()[i];
     if(s === null) return '<div class="day rest"><div class="dnum">'+w+'</div><div class="dbody"><div class="dttl">Recupero</div><div class="dmeta">'+esc(REST_LABEL[i])+'</div></div></div>';
     const d = P.days[s];
     const key = sessionKey(s);
@@ -2943,6 +3040,33 @@ function paintSheet(){
   }).join("");
 }
 
+/* Barre di aderenza: una per giorno previsto. Il colore dice subito se il
+   giorno regge (verde), vacilla (oro) o non esiste nella tua settimana. */
+function paintGiorni(){
+  const gg = aderenzaGiorni(8).filter(x=>x.prev > 0);
+  const box = $("giorniBox");
+  if(!gg.length || !S.log.length){
+    box.innerHTML = '<div class="empty">Servono alcune settimane di registro prima di poter dire quale giorno regge e quale no.</div>';
+    return;
+  }
+  const righe = gg.map(x=>{
+    const pc = Math.round(x.pct*100);
+    const col = x.pct >= 0.7 ? "var(--ok)" : (x.pct >= 0.45 ? "var(--gold)" : "var(--crit)");
+    return '<div class="statrow"><div class="stag">'+esc(x.n)+'</div>'
+      + '<div class="strack"><div class="sfill" style="width:'+pc+'%;background:'+col+'"></div></div>'
+      + '<div class="sval" style="font-size:13px">'+pc+'%</div></div>'
+      + '<div class="lbl" style="margin:-4px 0 8px 44px;color:var(--dimmer)">'+x.fatti+' su '+x.prev+'</div>';
+  }).join("");
+  const gd = giornoDebole();
+  box.innerHTML = righe
+    + '<div class="extip" style="margin:6px 0 0">'
+    + (gd
+        ? 'Il '+esc(GIORNI[gd.peggio.g])+' è il tuo punto debole e il '+esc(GIORNI[gd.meglio.g])
+          +' il più solido. Spostare la seduta costa meno che ripetere lo stesso fallimento ogni settimana.'
+        : 'Ultime otto settimane. Un giorno sotto il 45% non è pigrizia: è un giorno in cui, nella tua vita, quell\'ora non c\'è.')
+    + '</div>';
+}
+
 function paintLog(){
   $("logList").innerHTML = S.log.length ? S.log.slice().reverse().slice(0,40).map(l=>
     '<div class="logrow"><div class="logd">'+l.d.slice(5).replace("-","/")+'</div>'
@@ -2983,7 +3107,7 @@ function paintLog(){
 /* ---------- 7d. SESSIONE GUIDATA ---------------------------
    Una cosa sola sullo schermo alla volta. In palestra non si
    scorre una lista: si guarda cosa fare adesso.            */
-let gPassi = [], gIdx = 0, gTimer = null, gFine = 0, gTot = 0;
+let gPassi = [], gIdx = 0, gTimer = null, gFine = 0, gTot = 0, gVal = null;
 
 // L'ordine di esecuzione dipende dal tipo di seduta: nel circuito si fa
 // un giro completo e poi si riposa, nelle serie dritte si riposa fra le serie.
@@ -3054,8 +3178,27 @@ function vaiAvanti(){
 }
 window.completaPasso = function(){
   const p = gPassi[gIdx];
-  if(p && !p.riposo){ completeSet(p.i, p.set); save(); paintHeader(); }
+  if(p && !p.riposo){
+    // negli esercizi a tempo conta il tempo davvero tenuto, non quello previsto
+    let v = gVal;
+    if(p.ex.u === "s" && gTimer) v = Math.max(1, gTot - Math.max(0, Math.ceil((gFine - Date.now())/1000)));
+    completeSet(p.i, p.set, v);
+    save(); paintHeader();
+  }
   vaiAvanti();
+};
+window.regolaRip = function(d){
+  const p = gPassi[gIdx];
+  if(!p || p.riposo) return;
+  const base = repOf(p.ex), min = p.ex.u === "s" ? 5 : 1;
+  gVal = Math.max(min, (gVal == null ? base : gVal) + d);
+  const n = $("gNum"); if(n) n.textContent = gVal;
+  const l = $("gRegLbl");
+  if(l){
+    const dd = gVal - base;
+    l.textContent = dd === 0 ? "come previsto" : (dd>0?"+":"") + dd + (p.ex.u === "s" ? " secondi" : " ripetizioni");
+    l.style.color = dd === 0 ? "var(--dim)" : (dd > 0 ? "var(--ok)" : "var(--gold)");
+  }
 };
 window.saltaPasso = function(){ clearInterval(gTimer); gTimer=null; vaiAvanti(); };
 
@@ -3110,6 +3253,7 @@ function disegnaPasso(){
   }
 
   const rep = repOf(p.ex);
+  gVal = rep;
   const aTempo = p.ex.u === "s";
   const etichetta = p.giro ? "Giro "+p.giro+" di "+p.giri : "Serie "+p.serie+" di "+p.serieTot;
   const nSerie = setsOf(dayObj(currentDayIdx()));
@@ -3130,13 +3274,20 @@ function disegnaPasso(){
     +   '<svg viewBox="0 0 120 120" aria-hidden="true"><circle class="g-tr" cx="60" cy="60" r="52"/>'
     +   '<circle class="g-fr"'+(aTempo?' id="gArc"':'')+' cx="60" cy="60" r="52"'
     +   (aTempo ? '' : ' style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+(C*(1-q)).toFixed(1)+'"')+'/></svg>'
-    +   '<div class="g-inner"><div class="g-num"'+(aTempo?' id="gNum"':'')+'>'+rep+'</div>'
+    +   '<div class="g-inner"><div class="g-num" id="gNum">'+rep+'</div>'
     +   '<div class="g-unit">'+(aTempo ? "secondi" : "ripetizioni")+'</div></div>'
     + '</div>'
+    + (aTempo ? '' :
+        '<div class="g-reg"><button class="btn ghost sm" onclick="regolaRip(-1)" aria-label="Una ripetizione in meno">&minus;1</button>'
+        + '<span class="lbl" id="gRegLbl">come previsto</span>'
+        + '<button class="btn ghost sm" onclick="regolaRip(1)" aria-label="Una ripetizione in più">+1</button></div>')
     + dotsSerie(p.i, nSerie, p.set)
     + '<div class="g-tip">'+esc(p.ex.t)+'</div>'
-    + (pr ? '<div class="g-next">Poi: <strong>'+esc(pr.ex.n)+'</strong></div>'
-          : '<div class="g-next">Ultima serie della sessione</div>')
+    + (pr
+        ? (pr.i === p.i
+            ? '<div class="g-next">Poi: <strong>'+(pr.giro ? "giro "+pr.giro : "serie "+pr.serie)+'</strong> dello stesso esercizio</div>'
+            : '<div class="g-next">Poi: <strong>'+esc(pr.ex.n)+'</strong></div>')
+        : '<div class="g-next">Ultima serie della sessione</div>')
     + '</div>'
     + '<div class="g-azioni">'
     + '<button class="btn gold" onclick="completaPasso()">'+(aTempo ? "Fatto" : "Completato")+'</button>'
@@ -3182,7 +3333,14 @@ window.scegliCambio = function(k){
   disegnaPasso();
 };
 
-let fbPend = null, fbCoda = null;
+let fbPend = null, fbCoda = null, salCoda = null;
+function bloccoSalute(){
+  if(!salCoda || !S.salute.on || !isIOS()) return "";
+  const c = salCoda; salCoda = null;
+  return '<div class="rule"></div>'
+    + '<button class="btn ghost sm" style="width:100%" onclick="saluteScrivi('+c.ms+', '+JSON.stringify(c.n)+')">'
+    + 'Registra in Salute · '+Math.round(c.ms/6e4)+' min, ~'+kcalSessione(c.ms)+' kcal</button>';
+}
 function daChiedere(n){ return !!n && !((S.cur && S.cur.fb) || {})[n]; }
 function bloccoTaratura(n){
   if(!daChiedere(n)) return "";
@@ -3345,10 +3503,10 @@ function go(v){
   });
   window.scrollTo({top:0,behavior:"instant"});
   if(v==="status") paintStatus();
-  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); }
+  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); }
   else if(v==="train") paintTrain();
-  else if(v==="weight") paintWeight();
-  else if(v==="log") paintLog();
+  else if(v==="weight"){ paintWeight(); paintSalute(); }
+  else if(v==="log"){ paintLog(); paintPR(); }
   else if(v==="sheet") paintSheet();
   keepAwake(v==="train");
   paintNavBadge();
@@ -3362,12 +3520,17 @@ function openDay(i){
 
 // Registra una serie: XP, statistica, conteggio esecuzioni. Nessun effetto
 // se era gia' segnata.
-function completeSet(ei, si){
+function completeSet(ei, si, val){
   const d = dayObj(currentDayIdx());
   if(!S.cur.done[ei]) S.cur.done[ei]=[];
   const arr = S.cur.done[ei];
   if(arr.indexOf(si) >= 0) return false;
   arr.push(si);
+  // valore davvero eseguito: se non arriva dalla guida, vale il previsto
+  if(!S.cur.reps) S.cur.reps = {};
+  if(!S.cur.reps[ei]) S.cur.reps[ei] = [];
+  const rif = activeEx(d).find(x=>x.i===ei);
+  S.cur.reps[ei].push(val != null ? val : (rif ? repOf(rif.ex) : 0));
   if(!S.cur.t0) S.cur.t0 = Date.now();   // la sessione parte alla prima serie
   S.totalSets++;
   const vero = activeEx(d).find(x=>x.i===ei);   // tiene conto di adattamenti e scambi
@@ -3401,11 +3564,14 @@ function finishSession(){
   xp += Math.min(50, S.streak*5);
   const levels = addXP(xp);
   if(!S.cycleStart) S.cycleStart = lunediDi(todayISO());
+  if(S.mant){ const w = isoWeek(todayISO()); if(S.mantWeeks.indexOf(w) < 0) S.mantWeeks.push(w); }
   S.sessions++;
   const durMs = S.cur.t0 ? Date.now()-S.cur.t0 : 0;
+  archiviaSerie(coda);          // prima dell'azzeramento: legge S.cur.reps
   S.log.push({d:todayISO(), n:d.n, s:done, xp:Math.round(xp), ms:durMs});
   S.cur = {key:null, done:{}};
   fbCoda = ultimoEx;
+  salCoda = {ms: durMs, n: d.n};
   const nw = checkAch();
   const settimana = checkWeek();
   save(); render(); stopRest();
@@ -3417,15 +3583,224 @@ function finishSession(){
     + '<div class="extip" style="margin:0">'+esc(d.n)+' · '+done+' serie'+(full?" · completata al 100%":"")+'<br>Streak: '+S.streak+' giorni</div></div>'
     + (has("registro") ? '<div class="rule"></div><div class="lbl" style="margin-bottom:7px">[ Registro dell\'ombra ]</div>'
         + '<input type="text" id="notaSess" maxlength="90" placeholder="Com\'è andata? (facoltativo)">' : '')
-    + bloccoTaratura(fbCoda)
+    + bloccoPR() + bloccoTaratura(fbCoda) + bloccoSalute()
     + '<button class="btn" style="margin-top:16px" onclick="chiudiNota()">Chiudi</button>'); fbCoda = null; }
   go("status");
 }
+
+/* Storico e record per esercizio. Il registro sapeva quante volte avevi
+   fatto un movimento; adesso sa anche quanto ne hai fatto. */
+function archiviaSerie(coda){
+  const buf = (S.cur && S.cur.reps) || {};
+  if(!S.reps) S.reps = {};
+  if(!S.pr) S.pr = {};
+  nuoviPR = [];
+  coda.forEach(o=>{
+    const serie = buf[o.i];
+    if(!serie || !serie.length) return;
+    const nome = o.ex.n, u = o.ex.u === "s" ? "s" : "rip";
+    if(!S.reps[nome]) S.reps[nome] = [];
+    S.reps[nome].push({d:todayISO(), r:serie.slice(), u:u});
+    if(S.reps[nome].length > 40) S.reps[nome] = S.reps[nome].slice(-40);
+    const best = Math.max.apply(null, serie);
+    const pr = S.pr[nome];
+    if(!pr || best > pr.v){
+      if(pr) nuoviPR.push({n:nome, v:best, prec:pr.v, u:u});
+      S.pr[nome] = {v:best, d:todayISO(), u:u};
+    }
+  });
+}
+let nuoviPR = [];
+function bloccoPR(){
+  if(!nuoviPR.length) return "";
+  const r = nuoviPR.slice(0,3).map(x=>
+    '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0">'
+    + '<span style="font-size:13px">'+esc(x.n)+'</span>'
+    + '<span class="mono" style="font-size:13px;color:var(--gold)">'+x.v+' '+x.u+' <span style="color:var(--dimmer)">era '+x.prec+'</span></span></div>').join("");
+  nuoviPR = [];
+  return '<div class="rule"></div><div class="lbl" style="margin-bottom:6px;color:var(--gold)">[ Record superati ]</div>'+r;
+}
+
+function paintPR(){
+  const box = $("prBox");
+  if(!box) return;
+  const nomi = Object.keys(S.pr||{});
+  if(!nomi.length){
+    box.innerHTML = '<div class="empty">Nessun record ancora. Si registrano dalla sessione guidata, dove puoi correggere le ripetizioni davvero eseguite prima di confermare la serie.</div>';
+    return;
+  }
+  nomi.sort((a,b)=>(S.pr[b].d||"").localeCompare(S.pr[a].d||""));
+  // indice numerico invece del nome nell'attributo: i nomi contengono
+  // apostrofi e "&", che dentro un onclick rompono il documento
+  prNomi = nomi.slice(0,24);
+  box.innerHTML = prNomi.map((n,i)=>
+    '<button class="prrow" onclick="storicoEx('+i+')" aria-label="Storico di '+esc(n)+'">'
+    + '<span class="prn">'+esc(n)+'</span>'
+    + '<span class="prv">'+S.pr[n].v+'<span style="font-family:\'IBM Plex Mono\';font-size:10px;font-weight:400;color:var(--dim)"> '+S.pr[n].u+'</span></span>'
+    + '<span class="prd">'+S.pr[n].d.slice(8,10)+'/'+S.pr[n].d.slice(5,7)+'</span></button>').join("");
+}
+
+let prNomi = [];
+window.storicoEx = function(i){
+  const n = prNomi[i];
+  if(!n) return;
+  const st = (S.reps||{})[n] || [], pr = (S.pr||{})[n];
+  const ultime = st.slice(-10).reverse();
+  const tot = st.reduce((a,x)=>a + x.r.reduce((p,q)=>p+q,0), 0);
+  sysBox('<div class="stt">'+esc(n)+'</div><div class="rule"></div>'
+    + (pr ? '<div style="text-align:center"><span class="lbl">Record personale</span>'
+        + '<div class="lvlnum" style="font-size:54px;margin:2px 0 2px">'+pr.v+'</div>'
+        + '<div class="lbl">'+(pr.u === "s" ? "secondi" : "ripetizioni")+' · '+esc(pr.d.slice(8,10)+"/"+pr.d.slice(5,7)+"/"+pr.d.slice(0,4))+'</div></div>' : "")
+    + '<div class="rule"></div>'
+    + '<div class="lbl" style="margin-bottom:8px">Ultime sedute</div>'
+    + (ultime.length
+        ? ultime.map(x=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--grid)">'
+            + '<span class="mono" style="font-size:11px;color:var(--dim)">'+esc(x.d.slice(8,10)+"/"+x.d.slice(5,7))+'</span>'
+            + '<span class="mono" style="font-size:13px">'+x.r.join(" · ")+' <span style="color:var(--dimmer);font-size:10px">'+esc(x.u)+'</span></span></div>').join("")
+        : '<div class="empty">Nessuna seduta registrata.</div>')
+    + '<div class="extip" style="margin-top:12px">Volume totale accumulato: <strong style="color:var(--txt)">'+tot+' '+(pr?pr.u:"rip")+'</strong>'
+    + (tuneOf(n) !== 1 ? ' · taratura al '+Math.round(tuneOf(n)*100)+'%' : '')+'</div>'
+    + '<button class="btn ghost" style="margin-top:14px" onclick="closeOv()">Chiudi</button>');
+};
 
 function toast(msg){
   sysBox('<div class="stt">Sistema</div><div class="rule"></div><div class="extip" style="text-align:center;margin:0">'+esc(msg)+'</div>'
     + '<button class="btn ghost" style="margin-top:14px" onclick="closeOv()">Ok</button>');
 }
+
+/* ---------- 8b. PONTE CON SALUTE ---------------------------
+   HealthKit non è raggiungibile da una pagina web: è un framework
+   nativo e Safari non espone nessuna API. L'app Comandi invece
+   legge e scrive in Salute e si può invocare da un URL. Il ponte
+   passa di lì: due comandi creati una volta, poi un tocco.      */
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let attesaSalute = false;
+
+// Stima MET: circuiti metabolici ~7,5 · serie dritte ~5 · misto ~6,5.
+const MET = {cut:7.5, str:5.0, mix:6.5};
+function kcalSessione(ms){
+  const kg = (S.weights.length ? S.weights[S.weights.length-1].kg : 75);
+  const ore = (ms||0)/36e5;
+  if(ore <= 0) return 0;
+  return Math.round((MET[S.program]||6) * kg * ore);
+}
+
+function apriComando(nome, testo){
+  let u = "shortcuts://run-shortcut?name=" + encodeURIComponent(nome);
+  if(testo != null) u += "&input=text&text=" + encodeURIComponent(testo);
+  try { location.href = u; } catch(e){ toast("Non riesco ad aprire l'app Comandi da qui."); }
+}
+
+window.saluteLeggi = function(){
+  attesaSalute = true;
+  apriComando(S.salute.inNome, null);
+  setTimeout(paintSalute, 400);
+};
+
+// Il valore torna dagli appunti: così l'app non viene mai chiusa e i dati
+// restano nello stesso archivio. Il ritorno via URL svuoterebbe la sessione.
+window.saluteIncolla = async function(){
+  let txt = "";
+  try { txt = await navigator.clipboard.readText(); }
+  catch(e){ toast("Non riesco a leggere gli appunti. Incolla il valore a mano nel campo Kg."); return; }
+  const n = saluteRegistra(txt);
+  if(!n){ toast("Negli appunti non c'è un numero utilizzabile. Il comando ha copiato qualcosa?"); return; }
+  attesaSalute = false;
+  save(); render();
+  toast(n);
+};
+
+/* Accetta "84,2", "84.2 kg", "84.2|89.5" (peso e girovita). */
+function saluteRegistra(txt){
+  if(!txt) return null;
+  const nums = String(txt).replace(",", ".").match(/-?\d+(?:\.\d+)?/g);
+  if(!nums || !nums.length) return null;
+  const d = todayISO();
+  const msg = [];
+  const kg = parseFloat(nums[0]);
+  if(kg >= 25 && kg <= 350){
+    const at = S.weights.findIndex(w=>w.d===d);
+    if(at>=0) S.weights[at].kg = kg;
+    else { S.weights.push({d:d, kg:kg}); S.weights.sort((a,b)=>a.d.localeCompare(b.d)); addXP(15); }
+    msg.push("Peso " + kg.toFixed(1) + " kg");
+  }
+  if(nums.length > 1){
+    const cm = parseFloat(nums[1]);
+    if(cm >= 40 && cm <= 200){
+      if(!Array.isArray(S.waist)) S.waist = [];
+      const ag = S.waist.findIndex(w=>w.d===d);
+      if(ag>=0) S.waist[ag].cm = cm; else { S.waist.push({d:d, cm:cm}); S.waist.sort((a,b)=>a.d.localeCompare(b.d)); }
+      msg.push("girovita " + cm.toFixed(1) + " cm");
+    }
+  }
+  return msg.length ? (msg.join(" e ") + " registrati da Salute.") : null;
+}
+
+window.saluteScrivi = function(ms, nomeGiorno){
+  const min = Math.max(1, Math.round((ms||0)/6e4));
+  apriComando(S.salute.outNome, min + "|" + kcalSessione(ms) + "|" + (nomeGiorno||"Allenamento"));
+};
+
+window.saluteToggle = function(){
+  S.salute.on = !S.salute.on;
+  save(); paintSalute();
+  if(S.salute.on) saluteGuida();
+};
+window.saluteNome = function(quale, v){
+  S.salute[quale] = (v||"").trim() || (quale === "inNome" ? "Peso da Salute" : "Allenamento Risveglio");
+  save(); paintSalute();
+};
+
+function paintSalute(){
+  const pnl = $("pnlSalute");
+  if(!pnl) return;
+  pnl.hidden = !isIOS();
+  if(pnl.hidden) return;
+  const on = !!S.salute.on;
+  $("saluteBox").innerHTML =
+    '<div class="extip" style="margin:0 0 10px">Salute non è raggiungibile direttamente da un\'app web. Il ponte passa dall\'app <strong style="color:var(--txt)">Comandi</strong>: due comandi creati una volta sola, poi basta un tocco.</div>'
+    + '<button class="btn ghost sm" style="width:100%" onclick="saluteToggle()">'+(on ? "Disattiva il ponte" : "Attiva il ponte con Salute")+'</button>'
+    + (on
+      ? '<div class="rule"></div>'
+        + '<button class="btn" style="width:100%" onclick="saluteLeggi()">Leggi il peso da Salute</button>'
+        + (attesaSalute
+            ? '<button class="btn gold" style="width:100%;margin-top:8px" onclick="saluteIncolla()">Incolla il valore copiato</button>'
+              + '<div class="extip" style="margin:8px 0 0">Il comando ha copiato il valore negli appunti: tocca qui e conferma quando Safari chiede il permesso di incollare.</div>'
+            : '<div class="extip" style="margin:8px 0 0">Apre Comandi, che legge l\'ultima pesata da Salute e la copia. Tornando qui comparirà il pulsante per registrarla.</div>')
+        + '<div class="rule"></div>'
+        + '<div class="lbl" style="margin-bottom:6px">Nomi dei comandi</div>'
+        + '<div class="field" style="margin:0"><span class="lbl">Lettura del peso</span>'
+        + '<input type="text" id="salIn" value="'+esc(S.salute.inNome)+'" onchange="saluteNome(\'inNome\', this.value)"></div>'
+        + '<div class="field" style="margin:10px 0 0"><span class="lbl">Registrazione dell\'allenamento</span>'
+        + '<input type="text" id="salOut" value="'+esc(S.salute.outNome)+'" onchange="saluteNome(\'outNome\', this.value)"></div>'
+        + '<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="saluteGuida()">Come si creano i due comandi</button>'
+      : '');
+}
+
+window.saluteGuida = function(){
+  sysBox('<div class="stt">Comandi per Salute</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Da fare una volta sola, sull\'iPhone. I nomi delle azioni possono cambiare leggermente fra le versioni di iOS.</div>'
+    + '<div class="lbl" style="margin:16px 0 6px;color:var(--sys)">1 · Comando "'+esc(S.salute.inNome)+'"</div>'
+    + '<div class="extip" style="margin:0">Legge l\'ultima pesata da Salute e la copia negli appunti.<br><br>'
+    + '<strong style="color:var(--txt)">a.</strong> Apri <strong style="color:var(--txt)">Comandi</strong> e tocca <strong style="color:var(--txt)">+</strong><br>'
+    + '<strong style="color:var(--txt)">b.</strong> Cerca e aggiungi <strong style="color:var(--txt)">Trova campioni di salute</strong><br>'
+    + '<strong style="color:var(--txt)">c.</strong> Imposta: tipo <em>Peso</em> · ordina per <em>Data di inizio</em> · ordine <em>decrescente</em> · limite <em>1</em><br>'
+    + '<strong style="color:var(--txt)">d.</strong> Aggiungi <strong style="color:var(--txt)">Copia negli appunti</strong><br>'
+    + '<strong style="color:var(--txt)">e.</strong> Rinomina il comando in <strong style="color:var(--sys)">'+esc(S.salute.inNome)+'</strong></div>'
+    + '<div class="extip" style="margin:10px 0 0;color:var(--dimmer)">Per importare anche il girovita, aggiungi un secondo blocco identico con tipo <em>Circonferenza vita</em> e uni i due valori con una barra verticale prima di copiare.</div>'
+    + '<div class="rule"></div>'
+    + '<div class="lbl" style="margin:0 0 6px;color:var(--sys)">2 · Comando "'+esc(S.salute.outNome)+'"</div>'
+    + '<div class="extip" style="margin:0">Riceve <em>minuti|calorie|nome</em> e registra l\'allenamento in Salute.<br><br>'
+    + '<strong style="color:var(--txt)">a.</strong> Nuovo comando, poi <strong style="color:var(--txt)">Dividi testo</strong> con input <em>Input comando</em> e separatore personalizzato <strong style="color:var(--sys)">|</strong><br>'
+    + '<strong style="color:var(--txt)">b.</strong> <strong style="color:var(--txt)">Ottieni elemento dalla lista</strong> → primo elemento (i minuti)<br>'
+    + '<strong style="color:var(--txt)">c.</strong> Un secondo <strong style="color:var(--txt)">Ottieni elemento dalla lista</strong> → elemento all\'indice 2 (le calorie)<br>'
+    + '<strong style="color:var(--txt)">d.</strong> <strong style="color:var(--txt)">Registra allenamento</strong>: tipo <em>Allenamento funzionale di forza</em>, durata = passo b, calorie = passo c<br>'
+    + '<strong style="color:var(--txt)">e.</strong> Rinomina in <strong style="color:var(--sys)">'+esc(S.salute.outNome)+'</strong>, e nelle impostazioni del comando disattiva <em>Chiedi prima di eseguire</em></div>'
+    + '<div class="rule"></div>'
+    + '<div class="extip" style="margin:0;color:var(--dimmer)">Il ponte funziona quando l\'app è aperta in Safari o installata sulla schermata Home. Dentro un\'anteprima incorniciata iOS blocca l\'apertura di Comandi.</div>'
+    + '<button class="btn" style="margin-top:16px" onclick="closeOv()">Ho capito</button>');
+};
 
 function addWeight(){
   const v = parseFloat($("inW").value);
@@ -3569,6 +3944,17 @@ document.querySelectorAll("#segLvl button").forEach(b=>b.addEventListener("click
 }));
 $("btnEdit").addEventListener("click",()=>profileForm(false));
 $("btnTest").addEventListener("click", apriTest);
+document.querySelectorAll("#segMant button").forEach(b=>b.addEventListener("click", ()=>{
+  const on = b.dataset.m === "1";
+  if(on === !!S.mant) return;
+  S.mant = on;
+  S.cur = {key:null, done:{}};
+  if(on){ const w = isoWeek(todayISO()); if(S.mantWeeks.indexOf(w) < 0) S.mantWeeks.push(w); }
+  save(); render();
+  toast(on
+    ? "Mantenimento attivo: martedì e venerdì, volume ridotto. Il ciclo è in pausa."
+    : "Piano pieno ripristinato. Il ciclo riparte da dove l'avevi lasciato.");
+}));
 $("btnLim").addEventListener("click",()=>profileForm(false));
 $("btnGuida").addEventListener("click", avviaGuida);
 $("btnFinish").addEventListener("click", finishSession);
