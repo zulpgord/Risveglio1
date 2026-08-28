@@ -602,6 +602,19 @@ body.bloccato{overflow:hidden}
 .g-reg{display:flex;align-items:center;gap:10px}
 .g-reg .btn.sm{flex:none;min-width:62px;padding:9px 12px}
 .g-reg .lbl{min-width:9.5em;text-align:center}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fcell{position:relative;aspect-ratio:3/4;background:var(--well);border:1px solid var(--line-soft);overflow:hidden;padding:0;display:block}
+.fcell img{width:100%;height:100%;object-fit:cover;display:block}
+.fcell .flbl{
+  position:absolute;left:0;right:0;bottom:0;font-family:"IBM Plex Mono",monospace;font-size:8.5px;
+  letter-spacing:.1em;background:color-mix(in srgb, var(--void) 76%, transparent);color:var(--txt);
+  padding:3px 4px;text-transform:uppercase;
+}
+.fcell.vuota{display:grid;place-items:center;color:var(--dimmer);font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.08em}
+.fconf{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.fconf figure{margin:0}
+.fconf img{width:100%;height:auto;display:block;border:1px solid var(--line-soft)}
+.fconf figcaption{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--dim);margin-top:6px;line-height:1.5}
 .calcell{transition:fill .2s}
 .calmese{font-family:"IBM Plex Mono",monospace;font-size:7px;fill:var(--dimmer)}
 .prrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid);width:100%;text-align:left}
@@ -732,6 +745,7 @@ body.bloccato{overflow:hidden}
   .lvup-onda{display:none}
 }
 .treetabs{margin-bottom:14px}
+.treetabs button{font-size:9.5px;letter-spacing:.03em;padding:11px 2px}
 .lvlnum{
   font-family:"Saira Condensed","Chakra Petch",sans-serif;font-weight:900;
   font-size:88px;line-height:.86;text-align:center;color:var(--gold);
@@ -933,6 +947,10 @@ body.bloccato{overflow:hidden}
         <div id="progHead" class="extip" style="margin:0 0 12px"></div>
         <div class="stack" style="gap:8px" id="weekList"></div>
       </div>
+      <div class="panel" id="pnlArs" hidden>
+        <div class="panel-t"><span>Arsenale</span></div>
+        <div id="arsBox"></div>
+      </div>
       <div class="panel" id="pnlConsigli" hidden>
         <div class="panel-t"><span>Analisi del sistema</span></div>
         <div id="consBox"></div>
@@ -967,6 +985,7 @@ body.bloccato{overflow:hidden}
       </div>
       <div class="stack" style="gap:10px" id="exList"></div>
       <button class="btn" id="btnGuida" style="margin-bottom:2px">Avvia sessione guidata</button>
+      <button class="btn ghost sm" id="btnLibera" style="width:100%" hidden>Genera una seduta libera</button>
       <button class="btn gold" id="btnFinish">Completa sessione</button>
       <button class="btn ghost sm" id="btnReset" style="width:100%;margin-bottom:10px">Azzera serie</button>
     </div>
@@ -985,6 +1004,11 @@ body.bloccato{overflow:hidden}
           <input type="number" step="0.5" inputmode="decimal" id="inG" placeholder="00.0"></div>
         <div class="extip">Misuralo una volta a settimana, appena sveglio, all'altezza dell'ombelico e senza tirare. Il peso oscilla di oltre un chilo al giorno per acqua e sale; il girovita no.</div>
         <button class="btn" id="btnW" style="margin-top:12px">Registra · +15 XP</button>
+      </div>
+      <div class="panel" id="pnlSpecchio" hidden>
+        <div class="panel-t"><span>Specchio dell'ombra</span></div>
+        <div id="specBox"></div>
+        <input type="file" id="fotoIn" accept="image/*" hidden>
       </div>
       <div class="panel" id="pnlSalute" hidden>
         <div class="panel-t"><span>Salute</span></div>
@@ -1122,7 +1146,7 @@ body.bloccato{overflow:hidden}
 
 <script>
 "use strict";
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -1529,7 +1553,13 @@ const SKILLS = {
   visione: {r:"VOL", c:5, req:["riserva","grazia"],s:"Visione", n:"Visione del Futuro",      d:"Proiezione della data in cui raggiungerai il peso obiettivo, dal tuo trend reale."},
   registro:{r:"VOL", c:3, req:["bilancia"],        s:"Registro", n:"Registro dell'Ombra",   d:"A fine sessione puoi annotare com'è andata. Le note restano nel registro accanto a ogni allenamento."},
   richiamo:{r:"VOL", c:4, req:["visione","registro"],s:"Richiamo", n:"Richiamo del Sistema", d:"Conto alla rovescia al prossimo allenamento e conteggio dei giorni saltati, in cima alla schermata di stato."},
+  libera:  {r:"ARS", c:3, req:[],                  s:"Libera", n:"Sessione Libera",      d:"Generi una seduta extra scegliendo il bersaglio — gambe, addome, petto e braccia, dorso, fiato o corpo intero — e la durata. Il sistema la costruisce dal database rispettando livello e limitazioni."},
+  forgia:  {r:"ARS", c:4, req:["libera"],          s:"Forgia", n:"La Forgia",             d:"Le sedute che generi si possono salvare come schede tue, con un nome, e richiamare quando vuoi."},
+  bilanc:  {r:"ARS", c:4, req:["libera"],          s:"Bilanciere", n:"Il Bilanciere",     d:"Serie, ripetizioni e recupero di ogni scheda salvata diventano modificabili: la scheda smette di essere una proposta e diventa la tua."},
+  misura:  {r:"ARS", c:5, req:["forgia","bilanc"], s:"Su misura", n:"Piano su Misura",    d:"Una scheda tua può prendere il posto di un giorno del piano settimanale. Da qui in avanti il programma è metà del sistema e metà tuo."},
+
   calend:  {r:"VOL", c:3, req:["bilancia"],        s:"Calendario", n:"Calendario dell'Ombra", d:"Un anno intero a caselle, una per giorno, che si accendono quando ti alleni. Nessun numero racconta la costanza come dodici mesi di caselle accese e tre buchi."},
+  specchio:{r:"VOL", c:3, req:["calend"],          s:"Specchio", n:"Specchio dell'Ombra", d:"Archivio fotografico del fisico, con confronto prima/dopo affiancato ai numeri di peso e girovita. Le foto restano su questo dispositivo e non escono mai da qui."},
   patto:   {r:"VOL", c:4, req:["richiamo"],        s:"Patto", n:"Il Patto",                d:"Dichiari un obiettivo verificabile con una scadenza — dodici sedute in quattro settimane — e il sistema lo tiene, ti mostra quanto manca e alla fine emette un verdetto che resta nel registro."}
 };
 // Coordinate dei nodi. Forza e' una catena; gli altri due rami si aprono
@@ -1548,13 +1578,17 @@ const TREE = {
   VOL: {h:520, pos:{scudo:[150,40],
                     riserva:[46,132], bilancia:[150,132], grazia:[254,132],
                     visione:[56,244], registro:[150,244], calend:[248,244],
-                    richiamo:[150,356],
-                    patto:[150,462]}}
+                    richiamo:[104,356], specchio:[248,356],
+                    patto:[104,462]}},
+  ARS: {h:390, pos:{libera:[150,40],
+                    forgia:[60,150], bilanc:[240,150],
+                    misura:[150,268]}}
 };
 const BRANCH = {
   FOR:{n:"Forza",      s:"Vedere i numeri per quello che sono",      c:"var(--sys)"},
   RES:{n:"Resistenza", s:"Governare il tempo dentro la sessione",    c:"var(--ok)"},
-  VOL:{n:"Disciplina", s:"Difendere la costanza dai giorni storti",  c:"var(--gold)"}
+  VOL:{n:"Disciplina", s:"Difendere la costanza dai giorni storti",  c:"var(--gold)"},
+  ARS:{n:"Arsenale",   s:"Costruire la propria scheda",              c:"var(--shadow)"}
 };
 
 /* ---------- 1e. EQUIPAGGIAMENTO (solo estetico) ------------
@@ -1594,7 +1628,7 @@ const DEFAULT = () => ({
   limits:[], limitNote:"",
   cycleStart:null, deloadWeeks:[], deloadAsked:[], blocchiVisti:[],
   mant:false, mantWeeks:[], voceOn:true, emomOn:false,
-  patto:null, patti:[],
+  patto:null, patti:[], libera:null, schede:[], slot:{},
   salute:{on:false, inNome:"Peso da Salute", outNome:"Allenamento Risveglio"},
   pa:0, paTot:0, skills:[], owned:["pugni","tuta","nessuno","niente"],
   equip:{arma:"pugni", armatura:"tuta", artefatto:"nessuno", titolo:"niente"},
@@ -1659,6 +1693,8 @@ function migrate(raw){
     weeks:   Array.isArray(raw.weeks) ? raw.weeks : [],
     mantWeeks: Array.isArray(raw.mantWeeks) ? raw.mantWeeks : [],
     patti:   Array.isArray(raw.patti) ? raw.patti : [],
+    schede:  Array.isArray(raw.schede) ? raw.schede : [],
+    slot:    Object.assign({}, raw.slot||{}),
     salute:  Object.assign({}, d.salute, raw.salute||{}),
     waist:   Array.isArray(raw.waist) ? raw.waist : [],
     tests:   Array.isArray(raw.tests) ? raw.tests : []
@@ -1730,7 +1766,16 @@ function nextTrainingDay(){
   for(let i=1;i<=7;i++){ const s=sched()[(dowIndex()+i)%7]; if(s!==null) return s; }
   return 0;
 }
-function dayObj(i){ return PROG[S.program].days[i]; }
+/* Indice -1 = seduta libera generata al volo; gli indici 0..3 possono essere
+   dirottati su una scheda salvata. Tutto il resto dell'app passa da qui, e
+   quindi non sa nemmeno che il giorno non viene dal programma. */
+function dayObj(i){
+  if(i === -1) return S.libera || PROG[S.program].days[0];
+  const id = S.slot && S.slot[i];
+  if(id){ const sc = (S.schede||[]).find(x=>x.id === id); if(sc) return sc; }
+  return PROG[S.program].days[i];
+}
+function inLibera(){ return currentDayIdx() === -1; }
 // Esercizi dominati dalla parte superiore: sono quelli in cui la differenza
 // media di forza relativa fra i sessi e' marcata, e dove un obiettivo tarato
 // male demotiva invece di allenare.
@@ -1744,6 +1789,8 @@ function repOf(ex){
   }
   const t = tuneOf(ex.n);
   if(t !== 1) r = Math.max(ex.u === "s" ? 10 : 3, Math.round(r*t));
+  const dm = S.cur && S.cur.key ? dayObj(currentDayIdx()) : null;
+  if(dm && dm.mult && dm.mult !== 1) r = Math.max(ex.u === "s" ? 10 : 3, Math.round(r*dm.mult));
   return r;
 }
 /* Taratura per esercizio: "facile" alza le ripetizioni del 10%, "durissimo"
@@ -1761,7 +1808,11 @@ function ageRest(){
   if(a >= 40) return 10;
   return 0;
 }
-function restFor(){ return PROG[S.program].rest[S.level] + ageRest(); }
+function restFor(){
+  const d = S.cur && S.cur.key ? dayObj(currentDayIdx()) : null;
+  if(d && d.rest) return d.rest;
+  return PROG[S.program].rest[S.level] + ageRest();
+}
 
 // Frequenza cardiaca di riferimento, solo per il programma metabolico.
 function fcZona(){
@@ -1898,7 +1949,7 @@ function aderenza(){
   for(let i=0;i<14;i++){
     const d = new Date(Date.now()-i*864e5);
     const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-    if(sched()[(d.getDay()+6)%7] !== null){ previsti++; if(S.log.some(l=>l.d===iso)) fatti++; }
+    if(sched()[(d.getDay()+6)%7] !== null){ previsti++; if(logPiano().some(l=>l.d===iso)) fatti++; }
   }
   return {previsti, fatti, pct: previsti ? fatti/previsti : 1};
 }
@@ -1918,7 +1969,7 @@ function aderenzaGiorni(nSett){
       if(d.getTime() > oggi.getTime()) continue;
       const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
       prev++;
-      if(S.log.some(l=>l.d===iso)) fatti++;
+      if(logPiano().some(l=>l.d===iso)) fatti++;
     }
     out.push({g:g, n:WEEK[g], prev:prev, fatti:fatti, pct: prev ? fatti/prev : 0});
   }
@@ -2011,9 +2062,12 @@ function isoWeek(iso){
   const n = 1 + Math.round(((t - w1)/864e5 - 3 + ((w1.getDay()+6)%7))/7);
   return t.getFullYear()+"-W"+String(n).padStart(2,"0");
 }
+// Solo le sedute del piano chiudono la settimana: altrimenti quattro sedute
+// libere da dieci minuti varrebbero i due punti abilita' di una settimana vera.
+function logPiano(){ return S.log.filter(l=>!l.lib); }
 function sessionsThisWeek(iso){
   const w = isoWeek(iso);
-  return S.log.filter(l => isoWeek(l.d) === w).length;
+  return logPiano().filter(l => isoWeek(l.d) === w).length;
 }
 // Chiude la settimana: assegna PA e ricarica uno scudo, una sola volta.
 function checkWeek(){
@@ -2305,7 +2359,7 @@ function contaSu(el){
 }
 
 /* ---------- 7. RENDER -------------------------------------- */
-function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); paintTrain(); paintWeight(); paintSalute(); paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); paintSheet(); paintNavBadge(); }
+function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); paintArs(); paintTrain(); paintWeight(); paintSalute(); paintSpecchio(); paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); paintSheet(); paintNavBadge(); }
 
 function applyTheme(){
   const r = document.documentElement;
@@ -2535,12 +2589,287 @@ function paintConsigli(){
     + '<div style="font-size:12.5px;line-height:1.5;color:var(--dim)">'+esc(c.d)+'</div></div>').join("");
 }
 
+/* ---------- 4f. ARSENALE: SEDUTE SU MISURA ------------------
+   Il database contiene gia' una novantina di esercizi classificati
+   per schema di movimento: generare una seduta e' scegliere il
+   sottoinsieme giusto, non inventare contenuti nuovi.          */
+const BERSAGLI = [
+  {k:"gambe",    n:"Gambe",           d:"Quadricipiti, glutei, femorali, polpacci", mix:{gambe:1}},
+  {k:"core",     n:"Addome",          d:"Core anteriore, obliqui, anti-rotazione",  mix:{core:1}},
+  {k:"spinta",   n:"Petto e braccia", d:"Petto, spalle, tricipiti",                 mix:{spinta:1}},
+  {k:"trazione", n:"Dorso e bicipiti",d:"Dorsali, trapezi, catena posteriore",      mix:{trazione:1}},
+  {k:"cardio",   n:"Fiato",           d:"Condizionamento metabolico",               mix:{cardio:1}},
+  {k:"full",     n:"Corpo intero",    d:"Tutti gli schemi in una seduta",           mix:{spinta:2, trazione:2, gambe:2, core:1, cardio:1}}
+];
+const DURATE = [15, 30, 45];
+
+// Esercizi disponibili per uno schema, esclusi quelli che le limitazioni
+// dichiarate eliminerebbero del tutto.
+function poolSchema(k){
+  const db = dbEx();
+  return Object.keys(db).filter(n=>schemaDi(n) === k && adapt(db[n]) !== null).map(n=>db[n]);
+}
+/* Ordina per "quanto poco l'hai fatto": la varieta' non e' un vezzo, e'
+   il modo piu' semplice di non ripetere sempre gli stessi tre esercizi. */
+function scegliDa(pool, n, esclusi){
+  const usati = esclusi || new Set();
+  return pool.filter(e=>!usati.has(e.n))
+    .map(e=>({e:e, k:(S.exCount[e.n]||0) + Math.random()*0.9}))
+    .sort((a,b)=>a.k-b.k).slice(0, n).map(x=>x.e);
+}
+function generaSeduta(berK, minuti){
+  const ber = BERSAGLI.find(b=>b.k === berK) || BERSAGLI[0];
+  const serie = 3;
+  const perEs = serie * (35 + restFor());          // lavoro + recupero, in secondi
+  const quanti = Math.max(3, Math.min(10, Math.round(minuti*60 / perEs)));
+  const usati = new Set();
+  const scelti = [];
+
+  // Un riscaldamento c'e' sempre, tranne quando il bersaglio e' gia' il fiato.
+  if(berK !== "cardio"){
+    const w = scegliDa(poolSchema("cardio"), 1, usati);
+    if(w.length){ usati.add(w[0].n); scelti.push(w[0]); }
+  }
+  const restano = Math.max(2, quanti - scelti.length);
+  const pesi = ber.mix, chiavi = Object.keys(pesi);
+  const tot = chiavi.reduce((a,k)=>a+pesi[k],0);
+  // Ripartizione proporzionale con il resto ai pesi maggiori: con quindici
+  // minuti a disposizione il corpo intero non puo' toccare cinque schemi.
+  const conteggi = {};
+  let dati = 0;
+  chiavi.forEach(k=>{ conteggi[k] = Math.floor(restano * pesi[k] / tot); dati += conteggi[k]; });
+  const ord = chiavi.slice().sort((a,b)=>pesi[b]-pesi[a]);
+  for(let i=0; dati < restano; i++, dati++) conteggi[ord[i % ord.length]]++;
+  // Estrazione a rotazione: gli schemi si alternano invece di stare in blocchi.
+  const code = {};
+  chiavi.forEach(k=>{ code[k] = scegliDa(poolSchema(k), conteggi[k], usati); code[k].forEach(e=>usati.add(e.n)); });
+  let restaQualcosa = true;
+  while(restaQualcosa){
+    restaQualcosa = false;
+    ord.forEach(k=>{ if(code[k] && code[k].length){ scelti.push(code[k].shift()); restaQualcosa = true; } });
+  }
+  // se il bersaglio e' singolo e il pool non basta, riempi col corpo intero
+  if(scelti.length < 3){
+    scegliDa(poolSchema("gambe").concat(poolSchema("core")), 3-scelti.length, usati)
+      .forEach(e=>{ usati.add(e.n); scelti.push(e); });
+  }
+  const metabolica = berK === "cardio" || berK === "full";
+  return {
+    id: "lib"+Date.now(),
+    n: "Libera · " + ber.n,
+    ber: berK,
+    d: "Sessione libera · " + (metabolica ? "circuito" : "serie dritte"),
+    sets: {E:3, C:4, S:4},
+    ex: scelti,
+    lib: 1
+  };
+}
+function durataStimata(day){
+  const n = activeEx(day).length, ns = setsOf(day);
+  return Math.round(n * ns * (35 + restFor()) / 60);
+}
+
+window.apriLibera = function(){
+  window.__ber = window.__ber || "full";
+  window.__dur = window.__dur || 30;
+  sysBox('<div class="stt">Seduta libera</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Scegli il bersaglio e quanto tempo hai. Il sistema costruisce la seduta dal database rispettando il tuo livello e le limitazioni dichiarate. Vale XP, statistiche e record — non conta per la settimana completa né per il patto.</div>'
+    + '<div class="lbl" style="margin:16px 0 7px">Bersaglio</div>'
+    + '<div id="berGrid">' + BERSAGLI.map(b=>
+        '<button class="gear'+(b.k===window.__ber?" on":" can")+'" data-b="'+b.k+'" style="border-color:'
+        + (b.k===window.__ber?"var(--sys)":"var(--line)")+';color:'+(b.k===window.__ber?"var(--sys)":"var(--dim)")+'" onclick="pickBer(\''+b.k+'\')">'
+        + '<span class="gear-d"></span><span class="gear-n" style="color:var(--txt)">'+esc(b.n)
+        + '<span style="display:block;font-size:11px;color:var(--dim)">'+esc(b.d)+'</span></span></button>').join("")
+    + '</div>'
+    + '<div class="lbl" style="margin:16px 0 7px">Durata</div>'
+    + '<div class="seg" id="segDur">' + DURATE.map(m=>
+        '<button data-d="'+m+'"'+(m===window.__dur?' class="on"':'')+' onclick="pickDur('+m+')">'+m+' min</button>').join("") + '</div>'
+    + '<button class="btn" style="margin-top:18px" onclick="generaOra()">Genera</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+};
+window.pickBer = function(k){ window.__ber = k; apriLibera(); };
+window.pickDur = function(m){ window.__dur = m; apriLibera(); };
+
+window.generaOra = function(){
+  const d = generaSeduta(window.__ber, window.__dur);
+  window.__gen = d;
+  anteprimaLibera(d);
+};
+function anteprimaLibera(d){
+  const act = activeEx(d), ns = setsOf(d);
+  sysBox('<div class="stt">' + esc(d.n) + '</div><div class="rule"></div>'
+    + '<div class="lbl" style="text-align:center">'+ns+' serie × '+act.length+' esercizi · circa '+durataStimata(d)+' minuti · recupero '+restFor()+'s</div>'
+    + '<div style="margin-top:14px">'
+    + act.map(o=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--grid)">'
+        + '<span style="font-size:13px">'+esc(o.ex.n)+(o.ex.adapted?' <span style="color:var(--crit);font-size:10px">adattato</span>':'')+'</span>'
+        + '<span class="mono" style="font-size:12px;color:var(--dim);flex:none">'+repOf(o.ex)+(o.ex.u==="s"?"s":" rip")+'</span></div>').join("")
+    + '</div>'
+    + '<button class="btn gold" style="margin-top:16px" onclick="avviaLibera()">Comincia</button>'
+    + '<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="generaOra()">Rigenera</button>'
+    + (has("forgia") ? '<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="salvaScheda()">Salva come scheda</button>' : '')
+    + '<button class="btn ghost" style="margin-top:8px" onclick="apriLibera()">Cambia bersaglio</button>');
+}
+window.avviaLibera = function(){
+  const d = window.__gen; if(!d) return;
+  S.libera = d;
+  S.cur = {key: sessionKey(-1), done:{}};
+  closeOv(); save(); render(); go("train");
+  avviaGuida();
+};
+
+function paintArs(){
+  const pnl = $("pnlArs"); if(!pnl) return;
+  pnl.hidden = !has("libera");
+  const b = $("btnLibera"); if(b) b.hidden = !has("libera");
+  if(pnl.hidden) return;
+  $("arsBox").innerHTML = '<div class="extip" style="margin:0 0 12px">Una seduta extra costruita sul bersaglio che scegli. Non sostituisce il piano: lo affianca nei giorni in cui hai voglia o tempo diversi da quelli previsti.</div>'
+    + '<button class="btn" onclick="apriLibera()">Genera una seduta libera</button>'
+    + schedeBox();
+}
+const GIORNI_PIANO = [0,1,3,4];   // indici di SCHED con una sessione
+function schedeBox(){
+  if(!has("forgia")) return "";
+  const sc = S.schede || [];
+  let h = '<div class="rule"></div><div class="lbl" style="margin-bottom:8px">Le tue schede</div>';
+  if(!sc.length) return h + '<div class="extip" style="margin:0">Nessuna scheda salvata. Genera una seduta e scegli <em>Salva come scheda</em> per tenerla.</div>';
+  return h + sc.map((x,i)=>{
+    const slotDi = Object.keys(S.slot||{}).find(k=>S.slot[k] === x.id);
+    return '<div style="border:1px solid var(--line-soft);background:var(--cell-2);padding:11px;margin-bottom:8px">'
+      + '<div style="display:flex;align-items:baseline;gap:8px">'
+      + '<div class="exn" style="flex:1">'+esc(x.n)+'</div>'
+      + (slotDi !== undefined ? '<span class="pill" style="color:var(--ok)">'+WEEK[GIORNI_PIANO[+slotDi]]+'</span>' : '')
+      + '</div>'
+      + '<div class="lbl mono" style="margin-top:4px;letter-spacing:.06em">'+x.ex.length+' esercizi · '
+      + x.sets[S.level]+' serie · recupero '+(x.rest || (PROG[S.program].rest[S.level]+ageRest()))+'s'
+      + (x.mult && x.mult !== 1 ? ' · intensità '+Math.round(x.mult*100)+'%' : '')+'</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'
+      + '<button class="btn ghost sm" style="flex:1;min-width:84px" onclick="avviaScheda('+i+')">Avvia</button>'
+      + (has("bilanc") ? '<button class="btn ghost sm" style="flex:1;min-width:84px" onclick="modScheda('+i+')">Regola</button>' : '')
+      + (has("misura") ? '<button class="btn ghost sm" style="flex:1;min-width:84px" onclick="assegnaScheda('+i+')">Nel piano</button>' : '')
+      + '<button class="btn ghost sm" style="flex:1;min-width:84px" onclick="eliminaScheda('+i+')">Elimina</button>'
+      + '</div></div>';
+  }).join("");
+}
+
+window.salvaScheda = function(){
+  const d = window.__gen; if(!d) return;
+  sysBox('<div class="stt">Salva la scheda</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Dalle un nome che riconoscerai fra tre mesi.</div>'
+    + '<div class="field" style="margin-top:14px"><span class="lbl">Nome</span>'
+    + '<input type="text" id="scNome" maxlength="30" value="'+esc(d.n.replace("Libera · ",""))+'"></div>'
+    + '<button class="btn" onclick="confermaScheda()">Salva</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="anteprimaTorna()">Annulla</button>');
+};
+window.anteprimaTorna = function(){ if(window.__gen) anteprimaLibera(window.__gen); else closeOv(); };
+window.confermaScheda = function(){
+  const d = window.__gen; if(!d){ closeOv(); return; }
+  const nome = ($("scNome").value||"").trim() || "Scheda";
+  if(!Array.isArray(S.schede)) S.schede = [];
+  if(S.schede.length >= 12){ toast("Dodici schede sono il massimo: elimina quella che non usi più."); return; }
+  S.schede.push({id:"sc"+Date.now(), n:nome, ber:d.ber, d:d.d, sets:Object.assign({}, d.sets),
+                 ex:d.ex.slice(), rest:null, mult:1, lib:1});
+  save(); render();
+  toast('Scheda "'+nome+'" salvata. La trovi in Piano → Arsenale.');
+};
+window.avviaScheda = function(i){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  S.libera = sc;
+  S.cur = {key: sessionKey(-1), done:{}};
+  save(); render(); go("train"); avviaGuida();
+};
+window.eliminaScheda = function(i){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  sysBox('<div class="stt">Eliminare</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0;text-align:center">"'+esc(sc.n)+'" verrà cancellata. Se è assegnata a un giorno del piano, quel giorno torna al programma originale.</div>'
+    + '<button class="btn" style="border-color:var(--crit);color:var(--crit)" onclick="confermaElimina('+i+')">Elimina</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+};
+window.confermaElimina = function(i){
+  const sc = (S.schede||[])[i]; if(!sc){ closeOv(); return; }
+  Object.keys(S.slot||{}).forEach(k=>{ if(S.slot[k] === sc.id) delete S.slot[k]; });
+  S.schede.splice(i,1);
+  S.cur = {key:null, done:{}};
+  closeOv(); save(); render();
+};
+
+/* Il Bilanciere: la scheda smette di essere una proposta del sistema. */
+window.modScheda = function(i){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  const rBase = PROG[S.program].rest[S.level] + ageRest();
+  sysBox('<div class="stt">Regola · '+esc(sc.n)+'</div><div class="rule"></div>'
+    + '<div class="field"><span class="lbl">Serie per esercizio</span>'
+    + '<input type="number" inputmode="numeric" id="scSerie" min="2" max="8" value="'+sc.sets[S.level]+'"></div>'
+    + '<div class="field"><span class="lbl">Recupero in secondi</span>'
+    + '<input type="number" inputmode="numeric" id="scRest" min="20" max="240" value="'+(sc.rest || rBase)+'"></div>'
+    + '<div class="field"><span class="lbl">Intensità</span><div class="seg" id="segMult">'
+    + [[0.8,"Leggera"],[1,"Normale"],[1.2,"Dura"]].map(x=>
+        '<button data-m="'+x[0]+'"'+((sc.mult||1)===x[0]?' class="on"':'')+'>'+x[1]+'</button>').join("")
+    + '</div><div class="extip" style="margin:8px 0 0">Moltiplica le ripetizioni previste. Il recupero standard al tuo livello sarebbe '+rBase+' secondi.</div></div>'
+    + '<button class="btn" onclick="salvaMod('+i+')">Salva</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+  document.querySelectorAll("#segMult button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#segMult button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+  }));
+};
+window.salvaMod = function(i){
+  const sc = (S.schede||[])[i]; if(!sc){ closeOv(); return; }
+  const n = parseInt($("scSerie").value,10), r = parseInt($("scRest").value,10);
+  if(!n || n<2 || n>8){ toast("Le serie vanno da 2 a 8."); return; }
+  if(!r || r<20 || r>240){ toast("Il recupero va da 20 a 240 secondi."); return; }
+  const m = document.querySelector("#segMult button.on");
+  sc.sets = {E:n, C:n, S:n};
+  sc.rest = r;
+  sc.mult = m ? +m.dataset.m : 1;
+  S.cur = {key:null, done:{}};
+  closeOv(); save(); render();
+  toast("Scheda aggiornata.");
+};
+
+/* Piano su misura: da qui il programma e' meta' del sistema e meta' tuo. */
+window.assegnaScheda = function(i){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  const attuale = Object.keys(S.slot||{}).find(k=>S.slot[k] === sc.id);
+  sysBox('<div class="stt">Nel piano</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">"'+esc(sc.n)+'" prende il posto di un giorno del piano settimanale. Il programma originale resta: se togli la scheda, quel giorno torna com\'era.</div>'
+    + '<div style="margin-top:14px">'
+    + GIORNI_PIANO.map((g,idx)=>{
+        const occupato = S.slot && S.slot[idx];
+        const mio = occupato === sc.id;
+        const altra = occupato && !mio ? (S.schede.find(x=>x.id===occupato)||{}).n : null;
+        return '<button class="gear '+(mio?"on":"can")+'" style="border-color:'+(mio?"var(--ok)":"var(--line)")+'" onclick="metti('+i+','+idx+')">'
+          + '<span class="gear-d" style="color:'+(mio?"var(--ok)":"var(--sys)")+'"></span>'
+          + '<span class="gear-n" style="color:var(--txt)">'+WEEK[g]+' · '+esc(PROG[S.program].days[idx].n)
+          + '<span style="display:block;font-size:11px;color:var(--dim)">'
+          + (mio ? "occupato da questa scheda" : altra ? "occupato da: "+esc(altra) : "giorno del programma")+'</span></span>'
+          + '<span class="gear-c" style="color:var(--dimmer)">'+(mio?"IN USO":"SCEGLI")+'</span></button>';
+      }).join("")
+    + '</div>'
+    + (attuale !== undefined ? '<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="togliDalPiano('+i+')">Togli dal piano</button>' : '')
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Chiudi</button>');
+};
+window.metti = function(i, slotIdx){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  if(!S.slot) S.slot = {};
+  Object.keys(S.slot).forEach(k=>{ if(S.slot[k] === sc.id) delete S.slot[k]; });
+  S.slot[slotIdx] = sc.id;
+  S.cur = {key:null, done:{}};
+  closeOv(); save(); render();
+  toast('"'+sc.n+'" è ora il '+GIORNI[GIORNI_PIANO[slotIdx]]+' del tuo piano.');
+};
+window.togliDalPiano = function(i){
+  const sc = (S.schede||[])[i]; if(!sc) return;
+  Object.keys(S.slot||{}).forEach(k=>{ if(S.slot[k] === sc.id) delete S.slot[k]; });
+  S.cur = {key:null, done:{}};
+  closeOv(); save(); render();
+};
+
 /* ---------- 4e. IL PATTO -----------------------------------
    Un obiettivo dichiarato prima, con una scadenza e un verdetto
    che resta scritto. In psicologia comportamentale e' il
    dispositivo di impegno: funziona perche' il costo di fallire
    diventa visibile prima di iniziare, non dopo.              */
-function sessioniDa(iso){ return S.log.filter(l=>l.d >= iso).length; }
+function sessioniDa(iso){ return logPiano().filter(l=>l.d >= iso).length; }
 
 function controllaPatto(){
   const P = S.patto;
@@ -2793,7 +3122,7 @@ function paintPlan(){
   $("weekList").innerHTML = WEEK.map((w,i)=>{
     const s = sched()[i];
     if(s === null) return '<div class="day rest"><div class="dnum">'+w+'</div><div class="dbody"><div class="dttl">Recupero</div><div class="dmeta">'+esc(REST_LABEL[i])+'</div></div></div>';
-    const d = P.days[s];
+    const d = dayObj(s);
     const key = sessionKey(s);
     const logged = S.log.some(l=>l.d===todayISO() && l.n===d.n);
     const isDone = logged || (S.cur.key===key && doneCount(s)>=totalSets(d));
@@ -3918,9 +4247,9 @@ function go(v){
   });
   window.scrollTo({top:0,behavior:"instant"});
   if(v==="status") paintStatus();
-  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); }
+  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); paintArs(); }
   else if(v==="train") paintTrain();
-  else if(v==="weight"){ paintWeight(); paintSalute(); }
+  else if(v==="weight"){ paintWeight(); paintSalute(); paintSpecchio(); }
   else if(v==="log"){ paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); }
   else if(v==="sheet") paintSheet();
   keepAwake(v==="train");
@@ -3983,7 +4312,7 @@ function finishSession(){
   S.sessions++;
   const durMs = S.cur.t0 ? Date.now()-S.cur.t0 : 0;
   archiviaSerie(coda);          // prima dell'azzeramento: legge S.cur.reps
-  S.log.push({d:todayISO(), n:d.n, s:done, xp:Math.round(xp), ms:durMs});
+  S.log.push(Object.assign({d:todayISO(), n:d.n, s:done, xp:Math.round(xp), ms:durMs}, i === -1 ? {lib:1} : {}));
   S.cur = {key:null, done:{}};
   fbCoda = ultimoEx;
   salCoda = {ms: durMs, n: d.n};
@@ -4151,6 +4480,205 @@ function toast(msg){
   sysBox('<div class="stt">Sistema</div><div class="rule"></div><div class="extip" style="text-align:center;margin:0">'+esc(msg)+'</div>'
     + '<button class="btn ghost" style="margin-top:14px" onclick="closeOv()">Ok</button>');
 }
+
+/* ---------- 8c. SPECCHIO DELL'OMBRA ------------------------
+   Le foto non stanno in localStorage: cinque megabyte finirebbero
+   con la terza immagine e porterebbero giu' anche il profilo.
+   IndexedDB regge centinaia di scatti e vive nello stesso
+   dispositivo, senza uscire mai da qui.                        */
+const FOTO_DB = "risveglio_foto", FOTO_ST = "foto";
+const POSE = [{k:"fronte", n:"Fronte"}, {k:"lato", n:"Lato"}, {k:"schiena", n:"Schiena"}];
+let fotoDB = null, fotoCache = [], fotoUrls = [], fotoPosa = "fronte", fotoErr = null;
+
+function apriFotoDB(){
+  return new Promise((res, rej)=>{
+    if(fotoDB) return res(fotoDB);
+    if(!("indexedDB" in window)) return rej(new Error("IndexedDB non disponibile"));
+    const r = indexedDB.open(FOTO_DB, 1);
+    r.onupgradeneeded = ()=>{ const d = r.result; if(!d.objectStoreNames.contains(FOTO_ST)) d.createObjectStore(FOTO_ST, {keyPath:"id"}); };
+    r.onsuccess = ()=>{ fotoDB = r.result; res(fotoDB); };
+    r.onerror = ()=>rej(r.error || new Error("apertura fallita"));
+  });
+}
+function fotoStore(mode){ return apriFotoDB().then(d=>d.transaction(FOTO_ST, mode).objectStore(FOTO_ST)); }
+function fotoTutte(){
+  return fotoStore("readonly").then(st=>new Promise((res,rej)=>{
+    const r = st.getAll(); r.onsuccess = ()=>res(r.result||[]); r.onerror = ()=>rej(r.error);
+  }));
+}
+function fotoSalva(rec){
+  return fotoStore("readwrite").then(st=>new Promise((res,rej)=>{
+    const r = st.put(rec); r.onsuccess = ()=>res(); r.onerror = ()=>rej(r.error);
+  }));
+}
+function fotoCancella(id){
+  return fotoStore("readwrite").then(st=>new Promise((res,rej)=>{
+    const r = st.delete(id); r.onsuccess = ()=>res(); r.onerror = ()=>rej(r.error);
+  }));
+}
+
+/* Novecento pixel sul lato lungo e qualita' 0.72: circa cento kilobyte a
+   scatto, abbastanza per vedere una differenza di composizione corporea e
+   abbastanza poco da tenerne centinaia. */
+async function ridimensiona(file, max){
+  let src = null;
+  try { src = await createImageBitmap(file, {imageOrientation:"from-image"}); }
+  catch(e){ try { src = await createImageBitmap(file); } catch(e2){} }
+  if(!src){
+    const u = URL.createObjectURL(file);
+    try {
+      src = await new Promise((res,rej)=>{ const i = new Image(); i.onload = ()=>res(i); i.onerror = rej; i.src = u; });
+    } finally { setTimeout(()=>URL.revokeObjectURL(u), 3000); }
+  }
+  const w0 = src.width, h0 = src.height;
+  const k = Math.min(1, max / Math.max(w0, h0));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w0*k)); c.height = Math.max(1, Math.round(h0*k));
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  const blob = await new Promise(r=>c.toBlob(r, "image/jpeg", 0.72));
+  if(src.close) try{ src.close(); }catch(e){}
+  return {blob:blob, w:c.width, h:c.height};
+}
+
+window.pickPosa = function(k){ fotoPosa = k; paintSpecchio(); };
+window.chiediFoto = function(){ $("fotoIn").click(); };
+
+async function aggiungiFoto(file){
+  if(!file) return;
+  const d = ($("inWD") && $("inWD").value) || todayISO();
+  try {
+    const r = await ridimensiona(file, 900);
+    if(!r.blob) throw new Error("conversione fallita");
+    await fotoSalva({id: d + "|" + fotoPosa, d: d, pose: fotoPosa, blob: r.blob, w: r.w, h: r.h, ts: Date.now()});
+    await paintSpecchio();
+    toast("Foto salvata: " + d.slice(8,10) + "/" + d.slice(5,7) + " · " + fotoPosa + ". Resta su questo dispositivo.");
+  } catch(e){
+    toast("Non sono riuscito a salvare la foto. " + (e && e.message ? e.message : ""));
+  }
+}
+
+function pesoDi(iso){
+  const w = S.weights.filter(x=>x.d <= iso).pop();
+  const g = (S.waist||[]).filter(x=>x.d <= iso).pop();
+  return {kg: w ? w.kg : null, cm: g ? g.cm : null};
+}
+function liberaUrls(){ fotoUrls.forEach(u=>{ try{ URL.revokeObjectURL(u); }catch(e){} }); fotoUrls = []; }
+function urlDi(rec){ const u = URL.createObjectURL(rec.blob); fotoUrls.push(u); return u; }
+
+async function paintSpecchio(){
+  const pnl = $("pnlSpecchio"); if(!pnl) return;
+  pnl.hidden = !has("specchio");
+  if(pnl.hidden){ liberaUrls(); return; }
+  try { fotoCache = await fotoTutte(); fotoErr = null; }
+  catch(e){ fotoCache = []; fotoErr = e && e.message ? e.message : "archivio non disponibile"; }
+  liberaUrls();
+
+  const scelte = POSE.map(x=>'<button class="chip'+(x.k===fotoPosa?" on":"")+'" style="'
+      + (x.k===fotoPosa?"border-color:var(--sys);color:var(--sys);background:color-mix(in srgb, var(--sys) 10%, transparent)":"")
+      + '" onclick="pickPosa(\''+x.k+'\')">'+esc(x.n)+'</button>').join("");
+
+  const date = [...new Set(fotoCache.map(f=>f.d))].sort().reverse();
+  const kb = Math.round(fotoCache.reduce((a,f)=>a+(f.blob && f.blob.size ? f.blob.size : 0),0)/1024);
+
+  let galleria = "";
+  if(fotoErr){
+    galleria = '<div class="empty">Archivio foto non disponibile su questo browser: '+esc(fotoErr)+'</div>';
+  } else if(!date.length){
+    galleria = '<div class="empty">Nessuna foto. Scattane una per posa, con la stessa luce e la stessa distanza: è il confronto che conta, non la singola immagine.</div>';
+  } else {
+    galleria = date.slice(0,12).map(d=>{
+      const pz = pesoDi(d);
+      return '<div style="margin-top:14px"><div class="lbl" style="margin-bottom:6px">'
+        + d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4)
+        + (pz.kg !== null ? ' · '+pz.kg.toFixed(1)+' kg' : '')
+        + (pz.cm !== null ? ' · '+pz.cm.toFixed(1)+' cm' : '')+'</div>'
+        + '<div class="fgrid">' + POSE.map(po=>{
+            const f = fotoCache.find(x=>x.d===d && x.pose===po.k);
+            return f
+              ? '<button class="fcell" onclick="apriFoto(\''+f.id+'\')" aria-label="Foto '+esc(po.n)+' del '+d+'">'
+                + '<img src="'+urlDi(f)+'" alt=""><span class="flbl">'+esc(po.n)+'</span></button>'
+              : '<div class="fcell vuota">'+esc(po.n.toUpperCase())+'</div>';
+          }).join("") + '</div></div>';
+    }).join("");
+  }
+
+  // confronto: due date con la stessa posa
+  const conDate = [...new Set(fotoCache.filter(f=>f.pose===fotoPosa).map(f=>f.d))].sort();
+  let confronto = "";
+  if(conDate.length >= 2){
+    const a = conDate[0], b = conDate[conDate.length-1];
+    confronto = '<div class="rule"></div><div class="lbl" style="margin-bottom:8px">Confronto · '+esc(POSE.find(x=>x.k===fotoPosa).n)+'</div>'
+      + '<div class="grid2" style="gap:8px">'
+      + '<div class="field" style="margin:0"><span class="lbl">Prima</span><select id="confA">'
+      + conDate.map(d=>'<option value="'+d+'"'+(d===a?' selected':'')+'>'+d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4)+'</option>').join("")+'</select></div>'
+      + '<div class="field" style="margin:0"><span class="lbl">Dopo</span><select id="confB">'
+      + conDate.map(d=>'<option value="'+d+'"'+(d===b?' selected':'')+'>'+d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4)+'</option>').join("")+'</select></div>'
+      + '</div><div id="confBox" style="margin-top:12px"></div>';
+  }
+
+  $("specBox").innerHTML =
+    '<div class="extip" style="margin:0 0 12px">Una foto ogni due settimane dice quello che la bilancia non dice: il peso può stare fermo mentre la composizione cambia. <strong style="color:var(--txt)">Le immagini restano su questo telefono</strong> e non entrano nel backup JSON — usa il tasto Scarica per tenerne una copia altrove.</div>'
+    + '<div class="chips">'+scelte+'</div>'
+    + '<button class="btn" style="margin-top:12px" onclick="chiediFoto()">Aggiungi foto · '+esc(POSE.find(x=>x.k===fotoPosa).n).toLowerCase()+'</button>'
+    + '<div class="lbl" style="margin-top:8px;color:var(--dimmer)">La data è quella scelta nel riquadro "Registra peso" qui sopra'
+    + (fotoCache.length ? ' · '+fotoCache.length+' foto, '+(kb>1024 ? (kb/1024).toFixed(1)+' MB' : kb+' kB') : '')+'</div>'
+    + galleria + confronto;
+
+  if(conDate.length >= 2){
+    $("confA").addEventListener("change", disegnaConfronto);
+    $("confB").addEventListener("change", disegnaConfronto);
+    disegnaConfronto();
+  }
+}
+
+function disegnaConfronto(){
+  const box = $("confBox"); if(!box) return;
+  const a = $("confA").value, b = $("confB").value;
+  const fa = fotoCache.find(f=>f.d===a && f.pose===fotoPosa);
+  const fb = fotoCache.find(f=>f.d===b && f.pose===fotoPosa);
+  if(!fa || !fb){ box.innerHTML = ""; return; }
+  const pa = pesoDi(a), pb = pesoDi(b);
+  const gg = Math.abs(daysBetween(a, b));
+  const dk = (pa.kg !== null && pb.kg !== null) ? pb.kg - pa.kg : null;
+  const dc = (pa.cm !== null && pb.cm !== null) ? pb.cm - pa.cm : null;
+  const cap = (d, pz)=>'<figcaption>'+d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4)
+    + (pz.kg !== null ? '<br>'+pz.kg.toFixed(1)+' kg' : '')
+    + (pz.cm !== null ? '<br>'+pz.cm.toFixed(1)+' cm' : '')+'</figcaption>';
+  box.innerHTML = '<div class="fconf">'
+    + '<figure><img src="'+urlDi(fa)+'" alt="Prima">'+cap(a, pa)+'</figure>'
+    + '<figure><img src="'+urlDi(fb)+'" alt="Dopo">'+cap(b, pb)+'</figure></div>'
+    + '<div class="extip" style="margin:10px 0 0">'+gg+' giorni fra le due'
+    + (dk !== null ? ' · peso <strong style="color:'+(dk<0?"var(--ok)":"var(--gold)")+'">'+(dk>0?"+":"")+dk.toFixed(1)+' kg</strong>' : '')
+    + (dc !== null ? ' · girovita <strong style="color:'+(dc<0?"var(--ok)":"var(--gold)")+'">'+(dc>0?"+":"")+dc.toFixed(1)+' cm</strong>' : '')
+    + '.</div>';
+}
+
+window.apriFoto = function(id){
+  const f = fotoCache.find(x=>x.id===id); if(!f) return;
+  const pz = pesoDi(f.d);
+  sysBox('<div class="stt">'+esc(f.d.slice(8,10)+"/"+f.d.slice(5,7)+"/"+f.d.slice(0,4))+'</div><div class="rule"></div>'
+    + '<img src="'+urlDi(f)+'" alt="" style="width:100%;height:auto;display:block;border:1px solid var(--line-soft)">'
+    + '<div class="lbl" style="text-align:center;margin-top:10px">'+esc(f.pose)
+    + (pz.kg !== null ? ' · '+pz.kg.toFixed(1)+' kg' : '')
+    + (pz.cm !== null ? ' · '+pz.cm.toFixed(1)+' cm' : '')
+    + ' · '+f.w+'×'+f.h+'</div>'
+    + '<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="scaricaFoto(\''+id+'\')">Scarica una copia</button>'
+    + '<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="eliminaFoto(\''+id+'\')">Elimina</button>'
+    + '<button class="btn" style="margin-top:8px" onclick="closeOv()">Chiudi</button>');
+};
+window.scaricaFoto = function(id){
+  const f = fotoCache.find(x=>x.id===id); if(!f) return;
+  const u = URL.createObjectURL(f.blob);
+  const a = document.createElement("a");
+  a.href = u; a.download = "risveglio-"+f.d+"-"+f.pose+".jpg";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u), 4000);
+};
+window.eliminaFoto = async function(id){
+  try { await fotoCancella(id); } catch(e){}
+  closeOv();
+  await paintSpecchio();
+};
 
 /* ---------- 8b. PONTE CON SALUTE ---------------------------
    HealthKit non è raggiungibile da una pagina web: è un framework
@@ -4441,9 +4969,15 @@ document.querySelectorAll("#segMant button").forEach(b=>b.addEventListener("clic
 }));
 $("btnLim").addEventListener("click",()=>profileForm(false));
 $("btnGuida").addEventListener("click", avviaGuida);
+$("btnLibera").addEventListener("click", apriLibera);
 $("btnFinish").addEventListener("click", finishSession);
 $("btnReset").addEventListener("click",()=>{ S.cur={key:S.cur.key,done:{}}; save(); paintTrain(); });
 $("btnW").addEventListener("click", addWeight);
+$("fotoIn").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(f) aggiungiFoto(f);
+});
 $("tSkip").addEventListener("click", stopRest);
 $("tMinus").addEventListener("click", ()=>{ if(!tHandle) return; tEnd -= 15000; tTotal = Math.max(15, tTotal-15); paintTimer(); });
 $("tPlus").addEventListener("click", ()=>{ if(!tHandle) return; tEnd += 60000; tTotal += 60; paintTimer(); });
