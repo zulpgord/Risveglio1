@@ -560,8 +560,14 @@ body.bloccato{overflow:hidden}
   max-width:520px;margin:0 auto;
 }
 .g-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.g-tog{display:flex;gap:6px;flex:none}
+.gtg{
+  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 10px;min-height:44px;border:1px solid var(--line);color:var(--dimmer);transition:.15s;
+}
+.gtg.on{border-color:var(--sys);color:var(--sys);background:color-mix(in srgb, var(--sys) 12%, transparent)}
 .g-esci{
-  width:40px;height:40px;flex:none;display:grid;place-items:center;
+  width:44px;height:44px;flex:none;display:grid;place-items:center;
   border:1px solid var(--line);color:var(--dim);font-size:16px;
 }
 .g-esci:hover{color:var(--txt);border-color:var(--dim)}
@@ -596,6 +602,8 @@ body.bloccato{overflow:hidden}
 .g-reg{display:flex;align-items:center;gap:10px}
 .g-reg .btn.sm{flex:none;min-width:62px;padding:9px 12px}
 .g-reg .lbl{min-width:9.5em;text-align:center}
+.calcell{transition:fill .2s}
+.calmese{font-family:"IBM Plex Mono",monospace;font-size:7px;fill:var(--dimmer)}
 .prrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid);width:100%;text-align:left}
 .prrow:last-child{border-bottom:none}
 .prn{flex:1;min-width:0;font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:13.5px}
@@ -929,6 +937,14 @@ body.bloccato{overflow:hidden}
         <div class="panel-t"><span>Analisi del sistema</span></div>
         <div id="consBox"></div>
       </div>
+      <div class="panel" id="pnlPatto" hidden>
+        <div class="panel-t"><span>Il patto</span></div>
+        <div id="pattoBox"></div>
+      </div>
+      <div class="panel" id="pnlBil" hidden>
+        <div class="panel-t"><span>Bilancio del blocco</span></div>
+        <div id="bilBox"></div>
+      </div>
       <div class="panel" id="pnlGiorni">
         <div class="panel-t"><span>Aderenza per giorno</span></div>
         <div id="giorniBox"></div>
@@ -1010,6 +1026,18 @@ body.bloccato{overflow:hidden}
       <div class="panel" id="pnlVento" hidden>
         <div class="panel-t"><span>Passo del vento</span></div>
         <div id="ventoBox"></div>
+      </div>
+      <div class="panel" id="pnlMappa" hidden>
+        <div class="panel-t"><span>Mappa del carico</span></div>
+        <div id="mappaBox"></div>
+      </div>
+      <div class="panel" id="pnlDens" hidden>
+        <div class="panel-t"><span>Densità</span></div>
+        <div id="densBox"></div>
+      </div>
+      <div class="panel" id="pnlCal" hidden>
+        <div class="panel-t"><span>Calendario dell'ombra</span></div>
+        <div id="calBox"></div>
       </div>
       <div class="panel">
         <div class="panel-t"><span>Record personali</span></div>
@@ -1094,7 +1122,7 @@ body.bloccato{overflow:hidden}
 
 <script>
 "use strict";
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.6.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -1478,7 +1506,11 @@ const SKILLS = {
   occhio:  {r:"FOR", c:1, req:[],                  s:"Occhio", n:"Occhio del Cacciatore",   d:"Ogni esercizio mostra quante volte l'hai portato a termine per intero."},
   volume:  {r:"FOR", c:2, req:["occhio"],          s:"Volume", n:"Analisi del Volume",      d:"Grafico del volume settimanale nel registro: vedi se stai davvero crescendo."},
   carico:  {r:"FOR", c:3, req:["volume"],          s:"Sovraccarico", n:"Sovraccarico Progressivo",d:"Il sistema ti avvisa quando tre sessioni piene di fila dicono che sei pronto per il livello successivo."},
-  marchio: {r:"FOR", c:4, req:["carico"], cos:1,   s:"Marchio", n:"Marchio del Monarca",     d:"Aura dorata permanente sul badge di rango."},
+  mappa:   {r:"FOR", c:3, req:["volume"],          s:"Mappa", n:"Mappa del Carico",       d:"Il volume delle ultime otto settimane diviso per schema di movimento: spinta, trazione, gambe, core, cardio. Serve a vedere lo squilibrio che da soli non si nota — ed è quasi sempre lo stesso: troppa spinta, poca trazione."},
+  densita: {r:"FOR", c:3, req:["volume"],          s:"Densità", n:"Densità",              d:"Serie al minuto per sessione. È l'unico segno di progresso che non dipende dalle ripetizioni: se fai lo stesso lavoro in meno tempo sei migliorato, anche quando i numeri sulla scheda sono fermi."},
+  proiez:  {r:"FOR", c:4, req:["carico","mappa"],  s:"Proiezione", n:"Proiezione del Record", d:"Scegli un traguardo su un esercizio e il sistema stima quando ci arriverai, dalla progressione reale delle tue ripetizioni."},
+  bilblocco:{r:"FOR",c:4, req:["carico","densita"],s:"Bilancio", n:"Bilancio del Blocco",   d:"Confronto fra il blocco appena chiuso e il precedente: sessioni, serie, record superati, peso e aderenza affiancati."},
+  marchio: {r:"FOR", c:4, req:["proiez","bilblocco"], cos:1, s:"Marchio", n:"Marchio del Monarca", d:"Aura dorata permanente sul badge di rango."},
 
   respiro: {r:"RES", c:1, req:[],                  s:"Respiro", n:"Respiro Contato",         d:"Regoli il recupero di 15 secondi in più o in meno, sessione per sessione."},
   fiato:   {r:"RES", c:2, req:["respiro"],         s:"2° Fiato", n:"Secondo Fiato",           d:"Un minuto di recupero extra su richiesta, quando la serie è andata male."},
@@ -1487,6 +1519,8 @@ const SKILLS = {
   vento:   {r:"RES", c:4, req:["fiato","crono"],   s:"Vento", n:"Passo del Vento",         d:"Grafico delle sessioni per settimana: la costanza diventa visibile."},
   attivo:  {r:"RES", c:3, req:["ritmo"],           s:"Recupero", n:"Recupero Attivo",      d:"Durante il riposo il sistema propone una mobilità breve da fare sul posto, diversa a ogni serie."},
   lungo:   {r:"RES", c:4, req:["vento","attivo"],  s:"Fiato Lungo", n:"Fiato Lungo",       d:"Cronometro della sessione intera e durata media nel registro: scopri quanto ti costa davvero un allenamento."},
+  voce:    {r:"RES", c:3, req:["crono"],           s:"Voce", n:"Voce del Sistema",         d:"La sessione guidata parla: annuncia esercizio, ripetizioni, recupero e movimento successivo. Il telefono può restare per terra."},
+  emom:    {r:"RES", c:4, req:["attivo"],          s:"Al minuto", n:"Al Minuto",           d:"Ogni serie parte allo scoccare del minuto e il recupero è il tempo che avanza: più sei rapido, più riposi. Cambia la densità di una seduta senza toccare esercizi né ripetizioni."},
 
   scudo:   {r:"VOL", c:2, req:[],                  s:"Scudo", n:"Scudo dello Streak",      d:"Un giorno saltato non azzera lo streak. Si ricarica a ogni settimana completa."},
   riserva: {r:"VOL", c:3, req:["scudo"],           s:"Riserva", n:"Riserva di Gemme",        d:"Accumuli fino a due scudi invece di uno solo."},
@@ -1494,20 +1528,28 @@ const SKILLS = {
   bilancia:{r:"VOL", c:3, req:["scudo"],           s:"Bilancia", n:"Bilancia del Sistema",  d:"Il grafico completo del peso nel tempo: linea dell'obiettivo, media mobile a sette giorni, banda di tendenza e traguardi intermedi ogni chilo."},
   visione: {r:"VOL", c:5, req:["riserva","grazia"],s:"Visione", n:"Visione del Futuro",      d:"Proiezione della data in cui raggiungerai il peso obiettivo, dal tuo trend reale."},
   registro:{r:"VOL", c:3, req:["bilancia"],        s:"Registro", n:"Registro dell'Ombra",   d:"A fine sessione puoi annotare com'è andata. Le note restano nel registro accanto a ogni allenamento."},
-  richiamo:{r:"VOL", c:4, req:["visione","registro"],s:"Richiamo", n:"Richiamo del Sistema", d:"Conto alla rovescia al prossimo allenamento e conteggio dei giorni saltati, in cima alla schermata di stato."}
+  richiamo:{r:"VOL", c:4, req:["visione","registro"],s:"Richiamo", n:"Richiamo del Sistema", d:"Conto alla rovescia al prossimo allenamento e conteggio dei giorni saltati, in cima alla schermata di stato."},
+  calend:  {r:"VOL", c:3, req:["bilancia"],        s:"Calendario", n:"Calendario dell'Ombra", d:"Un anno intero a caselle, una per giorno, che si accendono quando ti alleni. Nessun numero racconta la costanza come dodici mesi di caselle accese e tre buchi."},
+  patto:   {r:"VOL", c:4, req:["richiamo"],        s:"Patto", n:"Il Patto",                d:"Dichiari un obiettivo verificabile con una scadenza — dodici sedute in quattro settimane — e il sistema lo tiene, ti mostra quanto manca e alla fine emette un verdetto che resta nel registro."}
 };
 // Coordinate dei nodi. Forza e' una catena; gli altri due rami si aprono
 // a rombo perche' hanno due prerequisiti paralleli.
 const TREE = {
-  FOR: {h:330, pos:{occhio:[150,40], volume:[150,120], carico:[150,200], marchio:[150,280]}},
-  RES: {h:432, pos:{respiro:[150,40],
-                    fiato:[46,146], ritmo:[150,146], crono:[254,146],
-                    vento:[98,268], attivo:[202,268],
-                    lungo:[150,382]}},
-  VOL: {h:432, pos:{scudo:[150,40],
-                    riserva:[46,146], bilancia:[150,146], grazia:[254,146],
-                    visione:[98,268], registro:[202,268],
-                    richiamo:[150,382]}}
+  FOR: {h:478, pos:{occhio:[150,40],
+                    volume:[150,132],
+                    mappa:[46,228], carico:[150,228], densita:[254,228],
+                    proiez:[92,330], bilblocco:[208,330],
+                    marchio:[150,428]}},
+  RES: {h:478, pos:{respiro:[150,40],
+                    fiato:[46,132], ritmo:[150,132], crono:[254,132],
+                    vento:[60,244], attivo:[150,244], voce:[244,244],
+                    lungo:[92,356], emom:[208,356],
+                    }},
+  VOL: {h:520, pos:{scudo:[150,40],
+                    riserva:[46,132], bilancia:[150,132], grazia:[254,132],
+                    visione:[56,244], registro:[150,244], calend:[248,244],
+                    richiamo:[150,356],
+                    patto:[150,462]}}
 };
 const BRANCH = {
   FOR:{n:"Forza",      s:"Vedere i numeri per quello che sono",      c:"var(--sys)"},
@@ -1551,7 +1593,8 @@ const DEFAULT = () => ({
   age:null, sex:"", calib:true,
   limits:[], limitNote:"",
   cycleStart:null, deloadWeeks:[], deloadAsked:[], blocchiVisti:[],
-  mant:false, mantWeeks:[],
+  mant:false, mantWeeks:[], voceOn:true, emomOn:false,
+  patto:null, patti:[],
   salute:{on:false, inNome:"Peso da Salute", outNome:"Allenamento Risveglio"},
   pa:0, paTot:0, skills:[], owned:["pugni","tuta","nessuno","niente"],
   equip:{arma:"pugni", armatura:"tuta", artefatto:"nessuno", titolo:"niente"},
@@ -1615,6 +1658,7 @@ function migrate(raw){
     owned:   (Array.isArray(raw.owned) && raw.owned.length) ? raw.owned : d.owned,
     weeks:   Array.isArray(raw.weeks) ? raw.weeks : [],
     mantWeeks: Array.isArray(raw.mantWeeks) ? raw.mantWeeks : [],
+    patti:   Array.isArray(raw.patti) ? raw.patti : [],
     salute:  Object.assign({}, d.salute, raw.salute||{}),
     waist:   Array.isArray(raw.waist) ? raw.waist : [],
     tests:   Array.isArray(raw.tests) ? raw.tests : []
@@ -2261,7 +2305,7 @@ function contaSu(el){
 }
 
 /* ---------- 7. RENDER -------------------------------------- */
-function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintTrain(); paintWeight(); paintSalute(); paintLog(); paintPR(); paintSheet(); paintNavBadge(); }
+function render(){ paintHeader(); paintStatus(); paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); paintTrain(); paintWeight(); paintSalute(); paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); paintSheet(); paintNavBadge(); }
 
 function applyTheme(){
   const r = document.documentElement;
@@ -2491,6 +2535,203 @@ function paintConsigli(){
     + '<div style="font-size:12.5px;line-height:1.5;color:var(--dim)">'+esc(c.d)+'</div></div>').join("");
 }
 
+/* ---------- 4e. IL PATTO -----------------------------------
+   Un obiettivo dichiarato prima, con una scadenza e un verdetto
+   che resta scritto. In psicologia comportamentale e' il
+   dispositivo di impegno: funziona perche' il costo di fallire
+   diventa visibile prima di iniziare, non dopo.              */
+function sessioniDa(iso){ return S.log.filter(l=>l.d >= iso).length; }
+
+function controllaPatto(){
+  const P = S.patto;
+  if(!P) return null;
+  const fatte = sessioniDa(P.from);
+  const scaduto = todayISO() > P.to;
+  if(fatte < P.n && !scaduto) return null;
+  const esito = Object.assign({}, P, {fatte:fatte, ok: fatte >= P.n, chiuso: todayISO()});
+  if(!Array.isArray(S.patti)) S.patti = [];
+  S.patti.push(esito);
+  S.patto = null;
+  if(esito.ok) grantPA(2, "patto onorato");
+  save();
+  return esito;
+}
+function verdettoPatto(e){
+  const gg = Math.max(1, daysBetween(e.from, e.chiuso));
+  sysBox('<div class="stt">Verdetto</div><div class="rule"></div>'
+    + '<div class="impact" style="text-align:center;font-size:26px;color:'+(e.ok?"var(--ok)":"var(--crit)")+'">'
+    + (e.ok ? "Patto onorato" : "Patto fallito") + '</div>'
+    + '<div class="lvup"><div class="lvup-scena">'
+    + (e.ok ? '<svg class="lvup-hex" viewBox="0 0 158 158" aria-hidden="true" style="stroke:var(--ok)"><path d="M79 4 L153 41 L153 117 L79 154 L5 117 L5 41 Z"/></svg>'
+            : '<svg class="lvup-hex" viewBox="0 0 158 158" aria-hidden="true" style="stroke:var(--crit);animation:none;opacity:.5"><path d="M79 4 L153 41 L153 117 L79 154 L5 117 L5 41 Z"/></svg>')
+    + '<div class="lvup-num" style="color:'+(e.ok?"var(--ok)":"var(--crit)")+'">'+e.fatte+'</div>'
+    + '</div></div>'
+    + '<div class="lbl" style="text-align:center">sedute su '+e.n+' promesse · '+gg+(gg===1?' giorno':' giorni')+'</div>'
+    + '<div class="extip" style="margin:14px 0 0">'
+    + (e.ok
+        ? 'Hai fatto quello che avevi detto. <strong style="color:var(--txt)">+2 punti abilità.</strong> Il prossimo patto puoi alzarlo, ma di poco: un patto che fallisci vale meno di uno modesto che onori.'
+        : 'Ne mancavano '+(e.n-e.fatte)+'. Non è un giudizio morale: è un dato. Il prossimo patto fallo su '+Math.max(2, e.fatte)+' sedute — un obiettivo che centri ricostruisce più fiducia di uno ambizioso che manchi.')
+    + '</div><button class="btn" style="margin-top:16px" onclick="closeOv()">Accetta</button>');
+}
+
+window.apriPatto = function(){
+  const sett = 4, n = Math.max(2, Math.round(sett * (S.mant ? 2 : 4) * 0.8));
+  sysBox('<div class="stt">Stringi un patto</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0">Dichiara quante sedute porterai a casa e in quanto tempo. Alla scadenza il sistema emette un verdetto e lo registra. Un patto onorato vale <strong style="color:var(--txt)">2 punti abilità</strong>.</div>'
+    + '<div class="field" style="margin-top:16px"><span class="lbl">Durata</span>'
+    + '<div class="seg" id="segPatto">'
+    + '<button data-w="2">2 settimane</button><button data-w="4" class="on">4 settimane</button><button data-w="8">8 settimane</button>'
+    + '</div></div>'
+    + '<div class="field"><span class="lbl">Sedute da completare</span>'
+    + '<input type="number" inputmode="numeric" id="pattoN" value="'+n+'" min="1" max="99"></div>'
+    + '<div class="extip" id="pattoTip"></div>'
+    + '<button class="btn" style="margin-top:14px" onclick="firmaPatto()">Firma il patto</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+  document.querySelectorAll("#segPatto button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#segPatto button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    const w = +b.dataset.w;
+    $("pattoN").value = Math.max(2, Math.round(w * (S.mant ? 2 : 4) * 0.8));
+    tipPatto();
+  }));
+  $("pattoN").addEventListener("input", tipPatto);
+  tipPatto();
+};
+function tipPatto(){
+  const b = document.querySelector("#segPatto button.on");
+  const w = b ? +b.dataset.w : 4;
+  const n = parseInt(($("pattoN")||{}).value, 10) || 0;
+  const previste = w * (S.mant ? 2 : 4);
+  const el = $("pattoTip"); if(!el) return;
+  const q = previste ? n/previste : 0;
+  const pc = Math.round(q*100);
+  // "il 81%" non si dice: davanti a otto e undici l'articolo si elide
+  const art = /^(8|11)/.test(String(pc)) ? "L'" : "Il ";
+  el.innerHTML = n <= 0 ? "Inserisci un numero di sedute."
+    : q > 1 ? '<span style="color:var(--crit)">Più di quante ne prevede il piano ('+previste+'): questo patto nasce già perso.</span>'
+    : q > 0.9 ? '<span style="color:var(--gold)">'+art+pc+'% delle sedute previste. Non lascia margine per una settimana storta.</span>'
+    : q < 0.4 ? '<span style="color:var(--dim)">Solo il '+pc+'% del piano. Onorarlo non ti dirà granché.</span>'
+    : '<span style="color:var(--ok)">'+art+pc+'% delle sedute previste in '+w+' settimane: severo ma raggiungibile.</span>';
+}
+window.firmaPatto = function(){
+  const b = document.querySelector("#segPatto button.on");
+  const w = b ? +b.dataset.w : 4;
+  const n = parseInt($("pattoN").value, 10);
+  if(!n || n < 1 || n > 99){ toast("Indica quante sedute vuoi portare a casa."); return; }
+  const fine = new Date(todayISO()+"T12:00:00"); fine.setDate(fine.getDate() + w*7);
+  S.patto = {n:n, sett:w, from:todayISO(),
+             to:new Date(fine.getTime()-fine.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+  closeOv(); save(); render();
+  toast("Patto firmato: "+n+" sedute entro "+w+" settimane. Da adesso il sistema conta.");
+};
+
+function paintPatto(){
+  const pnl = $("pnlPatto"); if(!pnl) return;
+  pnl.hidden = !has("patto");
+  if(pnl.hidden) return;
+  const P = S.patto, storia = (S.patti||[]).slice(-4).reverse();
+  const elenco = storia.length
+    ? '<div class="rule"></div><div class="lbl" style="margin-bottom:6px">Patti precedenti</div>'
+      + storia.map(x=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid)">'
+        + '<span style="font-size:12.5px">'+x.n+' sedute in '+x.sett+' settimane</span>'
+        + '<span class="mono" style="font-size:11.5px;color:'+(x.ok?"var(--ok)":"var(--crit)")+'">'
+        + (x.ok ? "onorato" : "fallito · "+x.fatte+"/"+x.n)+'</span></div>').join("")
+    : "";
+  if(!P){
+    $("pattoBox").innerHTML = '<div class="extip" style="margin:0 0 12px">Un patto è un obiettivo dichiarato <em>prima</em>, con una scadenza e un verdetto che resta scritto. Serve a spostare la decisione dal momento in cui non hai voglia a quello in cui ce l\'hai.</div>'
+      + '<button class="btn" onclick="apriPatto()">Stringi un patto</button>' + elenco;
+    return;
+  }
+  const fatte = sessioniDa(P.from);
+  const gg = Math.max(0, daysBetween(todayISO(), P.to));
+  const pc = Math.min(100, Math.round(fatte/P.n*100));
+  const mancano = Math.max(0, P.n - fatte);
+  const ritmo = gg > 0 ? (mancano / (gg/7)) : mancano;
+  $("pattoBox").innerHTML = '<div class="grid3">'
+    + '<div class="cell"><div class="lbl">Fatte</div><div class="big mono">'+fatte+'</div></div>'
+    + '<div class="cell"><div class="lbl">Promesse</div><div class="big mono">'+P.n+'</div></div>'
+    + '<div class="cell"><div class="lbl">Giorni</div><div class="big mono">'+gg+'</div></div></div>'
+    + '<div class="xpbar" style="margin-top:12px"><div class="xpfill" style="width:'+pc+'%"></div></div>'
+    + '<div class="extip" style="margin:10px 0 0">'
+    + (mancano === 0
+        ? '<strong style="color:var(--ok)">Patto già onorato.</strong> Il verdetto arriva alla prossima sessione registrata.'
+        : 'Ne mancano <strong style="color:var(--txt)">'+mancano+'</strong> in '+gg+' giorni: '
+          + (ritmo > (S.mant?2:4) ? '<span style="color:var(--crit)">servono '+ritmo.toFixed(1)+' sedute a settimana, più di quante ne preveda il piano.</span>'
+            : ritmo > (S.mant?1.5:3) ? '<span style="color:var(--gold)">'+ritmo.toFixed(1)+' a settimana, cioè quasi tutte. Nessun margine.</span>'
+            : '<span style="color:var(--ok)">'+ritmo.toFixed(1)+' a settimana. Sei in linea.</span>'))
+    + '</div>'
+    + '<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="rompiPatto()">Sciogli il patto</button>'
+    + elenco;
+}
+window.rompiPatto = function(){
+  sysBox('<div class="stt">Sciogliere il patto</div><div class="rule"></div>'
+    + '<div class="extip" style="margin-top:0;text-align:center">Verrà registrato come fallito, con le sedute fatte finora. Un patto sciolto in anticipo conta come un patto mancato: è il punto.</div>'
+    + '<button class="btn" style="border-color:var(--crit);color:var(--crit)" onclick="confermaRottura()">Sciogli</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="closeOv()">Annulla</button>');
+};
+window.confermaRottura = function(){
+  const P = S.patto; if(!P){ closeOv(); return; }
+  if(!Array.isArray(S.patti)) S.patti = [];
+  S.patti.push(Object.assign({}, P, {fatte: sessioniDa(P.from), ok:false, chiuso: todayISO()}));
+  S.patto = null; closeOv(); save(); render();
+};
+
+/* Statistiche di un blocco di dodici settimane, indicizzato da 1. */
+function statiBlocco(k){
+  if(!S.cycleStart || k < 1) return null;
+  const base = new Date(S.cycleStart+"T12:00:00").getTime();
+  const iso = ms => new Date(ms - new Date(ms).getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  const d1 = iso(base + (k-1)*12*7*864e5), d2 = iso(base + k*12*7*864e5);
+  const L = S.log.filter(l=>l.d >= d1 && l.d < d2);
+  const W = S.weights.filter(w=>w.d >= d1 && w.d < d2);
+  let record = 0;
+  Object.keys(S.pr||{}).forEach(n=>{ const d = S.pr[n].d; if(d >= d1 && d < d2) record++; });
+  return {
+    n:k, da:d1, a:d2,
+    sess:L.length,
+    serie:L.reduce((a,b)=>a+b.s,0),
+    minuti:Math.round(L.reduce((a,b)=>a+(b.ms||0),0)/6e4),
+    record:record,
+    peso: W.length>=2 ? +(W[W.length-1].kg - W[0].kg).toFixed(1) : null,
+    aderenza: Math.min(100, Math.round(L.length/48*100))
+  };
+}
+function paintBil(){
+  const pnl = $("pnlBil"); if(!pnl) return;
+  const c = cicloInfo();
+  pnl.hidden = !has("bilblocco") || !c || c.blocco < 2;
+  if(pnl.hidden) return;
+  const ora = statiBlocco(c.blocco), prima = statiBlocco(c.blocco-1);
+  if(!ora || !prima){ pnl.hidden = true; return; }
+  $("bilBox").innerHTML = tabellaBil(prima, ora, true)
+    + '<div class="extip" style="margin:12px 0 0">Blocco '+ora.n+' ancora in corso ('+c.tot+'ª settimana dall\'inizio): il confronto si completa alla dodicesima.</div>';
+}
+// Due colonne affiancate: il confronto e' l'unico modo di leggere un blocco.
+function tabellaBil(a, b, parziale){
+  const riga = (et, va, vb, meglio, suffisso)=>{
+    const d = (vb===null||va===null) ? null : vb-va;
+    const col = d===null ? "var(--dimmer)" : (d===0 ? "var(--dim)" : ((d>0)===meglio ? "var(--ok)" : "var(--crit)"));
+    const f = v => v===null ? "—" : (v>0&&suffisso==="kg"?"+":"")+v+(suffisso||"");
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--grid)">'
+      + '<span style="flex:1;font-size:13px">'+esc(et)+'</span>'
+      + '<span class="mono" style="width:4.5em;text-align:right;color:var(--dim);font-size:13px">'+f(va)+'</span>'
+      + '<span class="mono" style="width:4.5em;text-align:right;font-size:14px;font-weight:600">'+f(vb)+'</span>'
+      + '<span class="mono" style="width:3.6em;text-align:right;font-size:11px;color:'+col+'">'
+      + (d===null?"":(d>0?"+":"")+(suffisso==="kg"?d.toFixed(1):d))+'</span></div>';
+  };
+  return '<div style="display:flex;gap:8px;padding-bottom:6px">'
+    + '<span style="flex:1"></span>'
+    + '<span class="lbl" style="width:4.5em;text-align:right">bl. '+a.n+'</span>'
+    + '<span class="lbl" style="width:4.5em;text-align:right;color:var(--sys)">bl. '+b.n+(parziale?"*":"")+'</span>'
+    + '<span style="width:3.6em"></span></div>'
+    + riga("Sessioni", a.sess, b.sess, true)
+    + riga("Serie totali", a.serie, b.serie, true)
+    + riga("Minuti allenati", a.minuti, b.minuti, true)
+    + riga("Record superati", a.record, b.record, true)
+    + riga("Aderenza", a.aderenza, b.aderenza, true, "%")
+    + riga("Peso", a.peso, b.peso, S.program !== "str" ? false : true, "kg");
+}
+
 /* Fine blocco: dodici settimane di dati bastano per una decisione vera. */
 function controllaBlocco(){
   const c = cicloInfo(); if(!c) return;
@@ -2513,6 +2754,8 @@ function controllaBlocco(){
   else if(S.program === "str") cons = "Blocco di forza chiuso. Se le progressioni si sono fermate, dodici settimane di Misto rimettono in moto senza perdere quanto costruito.";
   else cons = "Blocco misto chiuso. Ora puoi specializzare: scegli il fronte su cui vuoi davvero avanzare nei prossimi tre mesi.";
 
+  const prec = has("bilblocco") ? statiBlocco(finito-1) : null;
+  const cur  = has("bilblocco") ? statiBlocco(finito) : null;
   sysBox('<div class="stt">Blocco completato</div><div class="rule"></div>'
     + '<div class="lvlnum" style="font-size:64px">'+finito+'</div>'
     + '<div class="lbl" style="text-align:center;margin-top:4px">dodici settimane</div>'
@@ -2520,6 +2763,7 @@ function controllaBlocco(){
     + '<div class="grid3"><div class="cell"><div class="lbl">Sessioni</div><div class="big mono">'+sess+'</div></div>'
     + '<div class="cell"><div class="lbl">Serie</div><div class="big mono">'+serie+'</div></div>'
     + '<div class="cell"><div class="lbl">Peso</div><div class="big mono">'+(dPeso===null?"—":(dPeso>0?"+":"")+dPeso.toFixed(1))+'</div></div></div>'
+    + (prec && cur ? '<div class="rule"></div><div class="lbl" style="margin-bottom:6px">[ Confronto con il blocco precedente ]</div>'+tabellaBil(prec, cur) : '')
     + '<div class="extip" style="margin:14px 0 0">'+esc(cons)+'</div>'
     + '<button class="btn" style="margin-top:16px" onclick="closeOv()">Accetta</button>');
 }
@@ -3067,6 +3311,138 @@ function paintGiorni(){
     + '</div>';
 }
 
+/* ---------- 7e. ANALISI AVANZATE ---------------------------
+   Schemi di movimento: la classificazione e' per nome perche' il
+   database non porta un campo dedicato, e riscriverlo per novanta
+   esercizi introdurrebbe piu' errori di quanti ne eviterebbe.
+   L'ordine conta: "Ponte glutei con marcia" e' gambe, non cardio. */
+const SCHEMI = [
+  {k:"spinta",  n:"Spinta",   c:"var(--sys)",    re:/push-?up|dip|pike|planche|verticale|spinta isometrica|tricipiti/i},
+  {k:"trazione",n:"Trazione", c:"var(--ok)",     re:/rematore|tirata|curl con|superman|snow angel|y-raise|retrazione/i},
+  {k:"gambe",   n:"Gambe",    c:"var(--shadow)", re:/squat|affond|ponte|calf|step-up|wall sit|stacco|abduzione|leg curl|pistol/i},
+  {k:"core",    n:"Core",     c:"var(--gold)",   re:/plank|crunch|hollow|dead bug|russian|l-sit|marcia da supino|curl-up|pallof|bird dog|camminata delle mani/i},
+  {k:"cardio",  n:"Cardio",   c:"var(--crit)",   re:/jumping|mountain|burpee|ginocchia|skater|corsa|marcia|step touch|passo laterale|cerchi con/i}
+];
+function schemaDi(nome){ const x = SCHEMI.find(q=>q.re.test(nome)); return x ? x.k : "altro"; }
+
+function paintMappa(){
+  const pnl = $("pnlMappa"); if(!pnl) return;
+  pnl.hidden = !has("mappa");
+  if(pnl.hidden) return;
+  const lim = todayMeno(56);
+  const conta = {};
+  Object.keys(S.reps||{}).forEach(nome=>{
+    const k = schemaDi(nome);
+    (S.reps[nome]||[]).forEach(v=>{ if(v.d >= lim) conta[k] = (conta[k]||0) + v.r.length; });
+  });
+  const tot = Object.values(conta).reduce((a,b)=>a+b,0);
+  if(!tot){
+    $("mappaBox").innerHTML = '<div class="empty">Servono alcune sessioni registrate dalla guida prima di poter dividere il volume per schema di movimento.</div>';
+    return;
+  }
+  const righe = SCHEMI.map(x=>{
+    const v = conta[x.k]||0, pc = Math.round(v/tot*100);
+    return '<div class="statrow"><div class="stag" style="width:66px">'+esc(x.n)+'</div>'
+      + '<div class="strack"><div class="sfill" style="width:'+pc+'%;background:'+x.c+'"></div></div>'
+      + '<div class="sval">'+pc+'%</div></div>';
+  }).join("");
+  const sp = conta.spinta||0, tr = conta.trazione||0;
+  let nota;
+  if(sp+tr < 8) nota = "Ancora pochi dati sulla parte superiore per giudicare l'equilibrio fra spinta e trazione.";
+  else if(sp > tr*1.8) nota = "Fai <strong style=\"color:var(--crit)\">"+(sp/Math.max(1,tr)).toFixed(1)+" volte più spinta che trazione</strong>. È lo squilibrio più comune di chi si allena a casa, e negli anni si paga sulle spalle: aggiungi una seduta di rematore o alterna i giorni.";
+  else if(tr > sp*1.8) nota = "La trazione supera nettamente la spinta. Meno comune, ma altrettanto sbilanciato: reintroduci push-up e dip.";
+  else nota = "Spinta e trazione sono in equilibrio (rapporto "+(sp/Math.max(1,tr)).toFixed(1)+"). È la condizione che protegge le spalle sui tempi lunghi.";
+  $("mappaBox").innerHTML = righe
+    + '<div class="extip" style="margin:10px 0 0">'+tot+' serie nelle ultime otto settimane. '+nota+'</div>';
+}
+function todayMeno(gg){
+  const d = new Date(Date.now()-gg*864e5);
+  return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+}
+
+function paintDens(){
+  const pnl = $("pnlDens"); if(!pnl) return;
+  pnl.hidden = !has("densita");
+  if(pnl.hidden) return;
+  const ses = S.log.filter(l=>l.ms > 60000 && l.s > 0).slice(-10);
+  if(ses.length < 2){
+    $("densBox").innerHTML = '<div class="empty">Servono almeno due sessioni cronometrate. La durata parte alla prima serie registrata.</div>';
+    return;
+  }
+  const dati = ses.map(l=>({l:l.d.slice(8,10)+"/"+l.d.slice(5,7), v: +(l.s/(l.ms/6e4)).toFixed(2)}));
+  const meta = Math.ceil(dati.length/2);
+  const primi = dati.slice(0, meta), ultimi = dati.slice(-meta);
+  const mA = primi.reduce((a,b)=>a+b.v,0)/primi.length;
+  const mB = ultimi.reduce((a,b)=>a+b.v,0)/ultimi.length;
+  const dv = mB - mA, pc = mA ? Math.round(dv/mA*100) : 0;
+  $("densBox").innerHTML = barreDec(dati, cssv("--gold"), "serie al minuto")
+    + '<div class="grid2" style="margin-top:12px">'
+    + '<div class="cell"><div class="lbl">Ultime sedute</div><div class="mono" style="font-size:17px;font-weight:600">'+mB.toFixed(2)+'</div></div>'
+    + '<div class="cell"><div class="lbl">Variazione</div><div class="mono" style="font-size:17px;font-weight:600;color:'
+    + (pc>2?"var(--ok)":pc<-2?"var(--gold)":"var(--txt)")+'">'+(pc>0?"+":"")+pc+'%</div></div></div>'
+    + '<div class="extip" style="margin:10px 0 0">Serie completate per minuto di sessione. '
+    + (pc > 5 ? "Stai facendo lo stesso lavoro in meno tempo: è un progresso reale anche se le ripetizioni non sono cambiate."
+      : pc < -5 ? "La densità sta calando. Se le ripetizioni sono salite è normale; se sono ferme, stai allungando i recuperi senza accorgertene."
+      : "Densità stabile. Per alzarla non servono più ripetizioni: basta accorciare le pause fra un esercizio e l'altro.")
+    + '</div>';
+}
+// Come weekBars ma con valori decimali: le medie non sono numeri interi.
+function barreDec(valori, colore, unita){
+  const max = Math.max(0.1, ...valori.map(v=>v.v));
+  const w = 360, h = 130, pb = 26, pt = 10, gap = 5;
+  const bw = (w - gap*(valori.length-1)) / valori.length;
+  const barre = valori.map((d,i)=>{
+    const bh = Math.max(2, (d.v/max)*(h-pt-pb));
+    const x = i*(bw+gap), y = h-pb-bh;
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'"'
+      + ' fill="'+colore+'" opacity="'+(i===valori.length-1?"1":".55")+'"/>'
+      + '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y-3).toFixed(1)+'" text-anchor="middle" font-size="8.5">'+d.v.toFixed(1)+'</text>'
+      + '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(h-9)+'" text-anchor="middle" font-size="8">'+esc(d.l)+'</text>';
+  }).join("");
+  return '<svg class="chart" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Ultime sessioni, '+unita+'">'
+    + '<line x1="0" y1="'+(h-pb)+'" x2="'+w+'" y2="'+(h-pb)+'" stroke="'+cssv("--grid")+'"/>' + barre + '</svg>';
+}
+
+/* Cinquantatré colonne da sette caselle: un anno di allenamenti visto tutto
+   insieme. La costanza è l'unica variabile che conta sui tempi lunghi, e
+   questa è l'unica forma in cui si guarda invece di leggerla. */
+function paintCal(){
+  const pnl = $("pnlCal"); if(!pnl) return;
+  pnl.hidden = !has("calend");
+  if(pnl.hidden) return;
+  const fatti = new Set(S.log.map(l=>l.d));
+  const oggi = new Date(todayISO()+"T12:00:00");
+  // parte dal lunedì di 52 settimane fa
+  const inizio = new Date(oggi);
+  inizio.setDate(inizio.getDate() - ((oggi.getDay()+6)%7) - 52*7);
+  const cw = 6.6, ch = 6.6, gap = 1.1;
+  const w = 53*(cw+gap) + 8, h = 7*(ch+gap) + 16;
+  let celle = "", mesi = "", ultimoMese = -1, n = 0;
+  for(let c=0; c<53; c++){
+    for(let r=0; r<7; r++){
+      const d = new Date(inizio); d.setDate(d.getDate() + c*7 + r);
+      if(d.getTime() > oggi.getTime()) continue;
+      const iso = new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+      const on = fatti.has(iso); if(on) n++;
+      const x = 8 + c*(cw+gap), y = 12 + r*(ch+gap);
+      celle += '<rect class="calcell" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+cw+'" height="'+ch+'"'
+        + ' fill="'+(on ? cssv("--sys") : cssv("--well"))+'" stroke="'+(iso===todayISO() ? cssv("--gold") : cssv("--line-soft"))
+        + '" stroke-width="'+(iso===todayISO() ? 1.2 : .6)+'"><title>'+iso+(on?" · allenamento":"")+'</title></rect>';
+      if(r===0 && d.getMonth() !== ultimoMese){
+        ultimoMese = d.getMonth();
+        mesi += '<text class="calmese" x="'+x.toFixed(1)+'" y="8">'+["G","F","M","A","M","G","L","A","S","O","N","D"][ultimoMese]+'</text>';
+      }
+    }
+  }
+  const sett = Math.max(1, Math.round((oggi - inizio)/(7*864e5)));
+  $("calBox").innerHTML = '<svg viewBox="0 0 '+w.toFixed(0)+' '+h.toFixed(0)+'" style="width:100%;height:auto;display:block" role="img"'
+    + ' aria-label="Calendario degli allenamenti: '+n+' giorni accesi nelle ultime '+sett+' settimane">'
+    + mesi + celle + '</svg>'
+    + '<div class="extip" style="margin:10px 0 0"><strong style="color:var(--txt)">'+n+' giorni</strong> accesi nelle ultime '
+    + sett+' settimane · media di '+(n/sett).toFixed(1)+' a settimana. Il vuoto più lungo racconta più della media: '
+    + 'guarda dove sono i buchi, non quanti sono.</div>';
+}
+
 function paintLog(){
   $("logList").innerHTML = S.log.length ? S.log.slice().reverse().slice(0,40).map(l=>
     '<div class="logrow"><div class="logd">'+l.d.slice(5).replace("-","/")+'</div>'
@@ -3107,7 +3483,7 @@ function paintLog(){
 /* ---------- 7d. SESSIONE GUIDATA ---------------------------
    Una cosa sola sullo schermo alla volta. In palestra non si
    scorre una lista: si guarda cosa fare adesso.            */
-let gPassi = [], gIdx = 0, gTimer = null, gFine = 0, gTot = 0, gVal = null;
+let gPassi = [], gIdx = 0, gTimer = null, gFine = 0, gTot = 0, gVal = null, gStepT0 = 0, gUsato = 0;
 
 // L'ordine di esecuzione dipende dal tipo di seduta: nel circuito si fa
 // un giro completo e poi si riposa, nelle serie dritte si riposa fra le serie.
@@ -3158,7 +3534,7 @@ window.avviaGuida = function(){
   disegnaPasso();
 };
 window.esciGuida = function(){
-  clearInterval(gTimer); gTimer = null;
+  clearInterval(gTimer); gTimer = null; zittisci();
   $("guida").classList.remove("on");
   document.body.classList.remove("bloccato");
   save(); render();
@@ -3178,6 +3554,7 @@ function vaiAvanti(){
 }
 window.completaPasso = function(){
   const p = gPassi[gIdx];
+  if(p && !p.riposo) gUsato = Math.round((Date.now() - gStepT0)/1000);
   if(p && !p.riposo){
     // negli esercizi a tempo conta il tempo davvero tenuto, non quello previsto
     let v = gVal;
@@ -3200,7 +3577,11 @@ window.regolaRip = function(d){
     l.style.color = dd === 0 ? "var(--dim)" : (dd > 0 ? "var(--ok)" : "var(--gold)");
   }
 };
-window.saltaPasso = function(){ clearInterval(gTimer); gTimer=null; vaiAvanti(); };
+window.saltaPasso = function(){
+  const p = gPassi[gIdx];
+  if(p && !p.riposo) gUsato = Math.round((Date.now() - gStepT0)/1000);
+  clearInterval(gTimer); gTimer=null; vaiAvanti();
+};
 
 const STATCOL = {FOR:"var(--sys)", RES:"var(--ok)", AGI:"var(--shadow)", VOL:"var(--gold)"};
 /* I pallini dicono a colpo d'occhio quante serie di QUESTO esercizio sono
@@ -3210,6 +3591,31 @@ function dotsSerie(i, n, cur){
   let h = '<div class="g-dots" role="img" aria-label="Serie di questo esercizio: '+done.length+' di '+n+'">';
   for(let k=0;k<n;k++) h += '<span class="'+(done.indexOf(k)>=0 ? "on" : (k===cur ? "now" : ""))+'"></span>';
   return h+'</div>';
+}
+
+/* La voce usa speechSynthesis, che su iOS parla solo dopo che l'utente ha
+   toccato qualcosa: la sessione guidata parte da un tocco, quindi va. */
+function parla(txt){
+  if(!has("voce") || S.voceOn === false || !txt) return;
+  try{
+    if(!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = "it-IT"; u.rate = 1.04;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function zittisci(){ try{ if("speechSynthesis" in window) speechSynthesis.cancel(); }catch(e){} }
+window.toggleVoce = function(){ S.voceOn = !S.voceOn; if(!S.voceOn) zittisci(); save(); disegnaPasso(); };
+window.toggleEmom = function(){ S.emomOn = !S.emomOn; save(); disegnaPasso(); };
+function emomAttivo(){ return has("emom") && !!S.emomOn; }
+function barraGuida(){
+  const v = has("voce"), e = has("emom");
+  if(!v && !e) return "";
+  return '<div class="g-tog">'
+    + (v ? '<button class="gtg'+(S.voceOn!==false?" on":"")+'" onclick="toggleVoce()" aria-pressed="'+(S.voceOn!==false)+'">Voce</button>' : '')
+    + (e ? '<button class="gtg'+(S.emomOn?" on":"")+'" onclick="toggleEmom()" aria-pressed="'+(!!S.emomOn)+'">Minuto</button>' : '')
+    + '</div>';
 }
 
 function prossimoEsercizio(){
@@ -3225,11 +3631,14 @@ function disegnaPasso(){
   const box = $("guidaBox");
 
   if(p.riposo){
-    const sec = p.breve ? transitFor() : restFor();
+    // Al minuto: il recupero e' quello che avanza dei sessanta secondi.
+    const emom = emomAttivo();
+    const sec = emom ? Math.max(5, 60 - gUsato) : (p.breve ? transitFor() : restFor());
     const pr = prossimoEsercizio();
-    const tit = p.breve ? "Cambio esercizio"
-      : (p.giro ? "Recupero · fine giro "+p.giro+" di "+p.giri : "Recupero");
-    box.innerHTML = '<div class="g-top"><span class="lbl">'+esc(tit)+'</span>'
+    const tit = emom ? "Al minuto · " + sec + "s di recupero"
+      : (p.breve ? "Cambio esercizio"
+      : (p.giro ? "Recupero · fine giro "+p.giro+" di "+p.giri : "Recupero"));
+    box.innerHTML = '<div class="g-top"><span class="lbl">'+esc(tit)+'</span>' + barraGuida()
       + '<button class="g-esci" onclick="esciGuida()" aria-label="Esci dalla guida">✕</button></div>'
       + '<div class="g-barra"><div style="width:'+pct+'%"></div></div>'
       + '<div class="g-centro">'
@@ -3244,10 +3653,13 @@ function disegnaPasso(){
       + bloccoTaratura(p.chiedi)
       + '</div>'
       + '<div class="g-azioni">'
-      + '<button class="btn" onclick="saltaPasso()">'+(p.breve ? "Sono pronto" : "Salta il recupero")+'</button>'
-      + (!p.breve && has("respiro") ? '<button class="btn ghost sm" onclick="regolaRiposo(-15)">−15s</button>' : '')
-      + (!p.breve && has("fiato") ? '<button class="btn ghost sm" onclick="regolaRiposo(60)">+60s</button>' : '')
+      + '<button class="btn" onclick="saltaPasso()">'+(p.breve && !emom ? "Sono pronto" : "Salta il recupero")+'</button>'
+      + (!p.breve && !emom && has("respiro") ? '<button class="btn ghost sm" onclick="regolaRiposo(-15)">−15s</button>' : '')
+      + (!p.breve && !emom && has("fiato") ? '<button class="btn ghost sm" onclick="regolaRiposo(60)">+60s</button>' : '')
       + '</div>';
+    parla(emom ? "Recupero " + sec + " secondi" + (pr ? ". Poi " + pr.ex.n : "")
+               : (p.breve ? "Cambio esercizio" + (pr ? ". " + pr.ex.n : "")
+                          : "Recupero " + sec + " secondi" + (pr ? ". Poi " + pr.ex.n : "")));
     avviaConto(sec, true);
     return;
   }
@@ -3261,7 +3673,7 @@ function disegnaPasso(){
   const pr = prossimoEsercizio();
   const C = 2*Math.PI*52, q = nSerie ? fatteQui/nSerie : 0;
 
-  box.innerHTML = '<div class="g-top"><span class="lbl">Serie '+fatti+' di '+tot+'</span>'
+  box.innerHTML = '<div class="g-top"><span class="lbl">Serie '+fatti+' di '+tot+'</span>' + barraGuida()
     + '<button class="g-esci" onclick="esciGuida()" aria-label="Esci dalla guida">✕</button></div>'
     + '<div class="g-barra"><div style="width:'+pct+'%"></div></div>'
     + '<div class="g-centro">'
@@ -3296,6 +3708,8 @@ function disegnaPasso(){
     + (has("ritmo") && !aTempo ? '<button class="btn ghost sm" onclick="startRitmo()">Ritmo</button>' : '')
     + '</div>';
 
+  gStepT0 = Date.now();
+  parla(p.ex.n + ", " + rep + (aTempo ? " secondi" : " ripetizioni"));
   if(aTempo) avviaConto(rep, false, ()=>{ completaPasso(); });
 }
 
@@ -3470,7 +3884,7 @@ window.regolaRiposo = function(d){
 function avviaConto(sec, auto, alTermine){
   clearInterval(gTimer);
   gTot = sec; gFine = Date.now() + sec*1000;
-  let finito = false;
+  let finito = false, avvisato = false;
   const tick = ()=>{
     const left = Math.max(0, Math.ceil((gFine - Date.now())/1000));
     const num = $("gNum"), arc = $("gArc");
@@ -3481,6 +3895,7 @@ function avviaConto(sec, auto, alTermine){
       arc.style.strokeDasharray = c;
       arc.style.strokeDashoffset = c * (1 - left/Math.max(1,gTot));
     }
+    if(left === 3 && auto && !avvisato){ avvisato = true; parla("Pronto"); }
     if(left <= 0 && !finito){
       finito = true; clearInterval(gTimer); gTimer = null; beep();
       if(auto) vaiAvanti(); else if(alTermine) alTermine();
@@ -3503,10 +3918,10 @@ function go(v){
   });
   window.scrollTo({top:0,behavior:"instant"});
   if(v==="status") paintStatus();
-  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); }
+  else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); }
   else if(v==="train") paintTrain();
   else if(v==="weight"){ paintWeight(); paintSalute(); }
-  else if(v==="log"){ paintLog(); paintPR(); }
+  else if(v==="log"){ paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); }
   else if(v==="sheet") paintSheet();
   keepAwake(v==="train");
   paintNavBadge();
@@ -3574,7 +3989,9 @@ function finishSession(){
   salCoda = {ms: durMs, n: d.n};
   const nw = checkAch();
   const settimana = checkWeek();
+  const esitoPatto = controllaPatto();
   save(); render(); stopRest();
+  if(esitoPatto) { verdettoPatto(esitoPatto); go("status"); return; }
   if(levels>0 || nw.length || settimana || shieldUsed || paLog.length) notifyLevel(levels, nw, settimana);
   else { paLog = []; sysBox('<div class="stt">Notifica di sistema</div><div class="rule"></div>'
     + '<div style="text-align:center"><div class="lbl">[ Sessione registrata ]</div>'
@@ -3641,9 +4058,75 @@ function paintPR(){
 }
 
 let prNomi = [];
+/* Regressione sui giorni reali: due sedute a tre giorni di distanza e due a
+   tre settimane non possono pesare uguale. */
+function regressione(pts){
+  if(!pts || pts.length < 4) return null;
+  const t0 = new Date(pts[0].d+"T12:00:00").getTime();
+  const xs = pts.map(q=>(new Date(q.d+"T12:00:00").getTime()-t0)/864e5), ys = pts.map(q=>q.v);
+  const n = xs.length, mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for(let i=0;i<n;i++){ num += (xs[i]-mx)*(ys[i]-my); den += (xs[i]-mx)**2; }
+  if(!den) return null;
+  return {m:num/den, q:my - (num/den)*mx, t0:t0};
+}
+function seriBest(st){ return (st||[]).map(x=>({d:x.d, v:Math.max.apply(null, x.r)})); }
+
+function bloccoProiez(n){
+  if(!has("proiez")) return "";
+  const st = (S.reps||{})[n] || [];
+  const pts = seriBest(st);
+  const r = regressione(pts);
+  const pr = (S.pr||{})[n];
+  const u = pr ? pr.u : "rip";
+  if(!r){
+    return '<div class="rule"></div><div class="lbl" style="margin-bottom:6px;color:var(--sys)">[ Proiezione ]</div>'
+      + '<div class="extip" style="margin:0">Servono almeno quattro sedute con questo esercizio per stimare una progressione.</div>';
+  }
+  const perSett = r.m * 7;
+  const base = pr ? pr.v : Math.round(pts[pts.length-1].v);
+  const suggerito = u === "s" ? Math.ceil((base*1.25)/10)*10 : Math.ceil((base*1.25)/5)*5;
+  return '<div class="rule"></div><div class="lbl" style="margin-bottom:6px;color:var(--sys)">[ Proiezione ]</div>'
+    + '<div class="extip" style="margin:0 0 10px">Ritmo attuale: <strong style="color:'
+    + (perSett > 0.05 ? "var(--ok)" : perSett < -0.05 ? "var(--crit)" : "var(--txt)") + '">'
+    + (perSett>0?"+":"") + perSett.toFixed(2) + ' ' + u + ' a settimana</strong>, su ' + pts.length + ' sedute.</div>'
+    + '<div style="display:flex;gap:8px;align-items:flex-end">'
+    + '<div class="field" style="margin:0;flex:1"><span class="lbl">Traguardo</span>'
+    + '<input type="number" inputmode="numeric" id="prTarget" value="'+suggerito+'"></div>'
+    + '<button class="btn ghost sm" style="flex:none" onclick="calcolaProiez()">Calcola</button></div>'
+    + '<div id="prOut" style="margin-top:10px"></div>';
+}
+window.calcolaProiez = function(){
+  const n = window.__prSel; if(!n) return;
+  const t = parseFloat(($("prTarget")||{}).value);
+  const out = $("prOut"); if(!out) return;
+  const r = regressione(seriBest((S.reps||{})[n]));
+  const pr = (S.pr||{})[n], u = pr ? pr.u : "rip";
+  if(!r || isNaN(t) || t <= 0){ out.innerHTML = '<div class="extip" style="margin:0">Inserisci un traguardo valido.</div>'; return; }
+  const base = pr ? pr.v : 0;
+  if(t <= base){
+    out.innerHTML = '<div class="extip" style="margin:0;color:var(--ok)">Ci sei già: il tuo record è '+base+' '+u+'.</div>';
+    return;
+  }
+  if(r.m <= 0.002){
+    out.innerHTML = '<div class="extip" style="margin:0">La progressione è ferma o in calo: non c\'è una data da proiettare. '
+      + 'Prima di puntare a '+t+' '+u+', cambia una variabile — tempo sotto tensione, variante, o recupero.</div>';
+    return;
+  }
+  const gg = (t - r.q) / r.m;
+  const data = new Date(r.t0 + gg*864e5);
+  const restanti = Math.round((data - Date.now())/864e5);
+  out.innerHTML = '<div class="extip" style="margin:0">Al ritmo attuale arrivi a <strong style="color:var(--txt)">'+t+' '+u
+    + '</strong> intorno al <strong style="color:var(--gold)">'
+    + data.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"})+'</strong>'
+    + (restanti > 0 ? ' — fra '+restanti+' giorni' : '')
+    + '. È una retta tirata sui tuoi dati: le progressioni a corpo libero rallentano avvicinandosi al limite, quindi consideralo un limite ottimistico.</div>';
+};
+
 window.storicoEx = function(i){
   const n = prNomi[i];
   if(!n) return;
+  window.__prSel = n;
   const st = (S.reps||{})[n] || [], pr = (S.pr||{})[n];
   const ultime = st.slice(-10).reverse();
   const tot = st.reduce((a,x)=>a + x.r.reduce((p,q)=>p+q,0), 0);
@@ -3660,6 +4143,7 @@ window.storicoEx = function(i){
         : '<div class="empty">Nessuna seduta registrata.</div>')
     + '<div class="extip" style="margin-top:12px">Volume totale accumulato: <strong style="color:var(--txt)">'+tot+' '+(pr?pr.u:"rip")+'</strong>'
     + (tuneOf(n) !== 1 ? ' · taratura al '+Math.round(tuneOf(n)*100)+'%' : '')+'</div>'
+    + bloccoProiez(n)
     + '<button class="btn ghost" style="margin-top:14px" onclick="closeOv()">Chiudi</button>');
 };
 
@@ -4050,7 +4534,12 @@ window.addEventListener("online", ()=>{ if(cloudOK !== false) pushCloud(); });
   render();
   $("appVer").textContent = "Protocollo Risveglio · v" + APP_VERSION + (standalone ? " · file unico" : " · file unico");
   setSync("on", "Pronto");
-  if(!S.name) profileForm(true); else { installHint(); controllaBlocco(); }
+  if(!S.name) profileForm(true);
+  else {
+    installHint();
+    const e = controllaPatto();
+    if(e){ render(); verdettoPatto(e); } else controllaBlocco();
+  }
 })();
 </script>
 </body>
