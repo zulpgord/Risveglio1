@@ -147,6 +147,9 @@
   --tint:rgba(10,111,176,.05);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* l'attributo hidden perde contro qualunque classe che imposti display:
+   senza questo, nascondere un contenitore .stack non ha alcun effetto */
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{
   background:var(--void);
@@ -602,6 +605,39 @@ body.bloccato{overflow:hidden}
 .g-reg{display:flex;align-items:center;gap:10px}
 .g-reg .btn.sm{flex:none;min-width:62px;padding:9px 12px}
 .g-reg .lbl{min-width:9.5em;text-align:center}
+/* ---------- calendario mensile ---------- */
+.mnav{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.mnav b{
+  flex:1;text-align:center;font-family:"Chakra Petch",sans-serif;font-weight:600;
+  font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt);
+}
+.mnav button{
+  width:44px;height:44px;flex:none;display:grid;place-items:center;
+  border:1px solid var(--line);color:var(--dim);font-size:15px;transition:.15s;
+}
+.mnav button:hover:not([disabled]){color:var(--txt);border-color:var(--dim)}
+.mnav button[disabled]{opacity:.3}
+.calm{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.calm .dow{
+  font-family:"IBM Plex Mono",monospace;font-size:9px;color:var(--dimmer);
+  text-align:center;letter-spacing:.1em;padding-bottom:2px;
+}
+.cd{
+  aspect-ratio:1;min-height:44px;display:grid;place-items:center;position:relative;
+  border:1px solid var(--line-soft);background:var(--well);padding:0;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--dim);transition:.15s;
+}
+.cd.vuoto{border:none;background:none;pointer-events:none}
+.cd.rip{opacity:.45}
+.cd.ok{background:color-mix(in srgb, var(--ok) 24%, transparent);border-color:var(--ok);color:var(--txt);font-weight:600}
+.cd.lib{background:color-mix(in srgb, var(--shadow) 20%, transparent);border-color:var(--shadow);color:var(--txt)}
+.cd.ko{background:color-mix(in srgb, var(--crit) 13%, transparent);border-color:color-mix(in srgb, var(--crit) 50%, transparent);color:var(--crit)}
+.cd.futuro{opacity:.55}
+.cd.oggi{box-shadow:inset 0 0 0 2px var(--gold)}
+.cd:active:not(.vuoto){transform:scale(.94)}
+.mlegenda{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.mlegenda span{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.mlegenda i{width:11px;height:11px;flex:none;border:1px solid currentColor;display:block}
 .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .fcell{position:relative;aspect-ratio:3/4;background:var(--well);border:1px solid var(--line-soft);overflow:hidden;padding:0;display:block}
 .fcell img{width:100%;height:100%;object-fit:cover;display:block}
@@ -943,9 +979,13 @@ body.bloccato{overflow:hidden}
         <div class="extip" style="margin:0" id="mantBanner"></div>
       </div>
       <div class="panel">
-        <div class="panel-t"><span>Piano settimanale</span></div>
+        <div class="panel-t"><span>Piano</span></div>
+        <div class="seg" id="segVista" style="margin-bottom:12px">
+          <button data-v="sett">Settimana</button><button data-v="mese">Mese</button>
+        </div>
         <div id="progHead" class="extip" style="margin:0 0 12px"></div>
         <div class="stack" style="gap:8px" id="weekList"></div>
+        <div id="meseBox" hidden></div>
       </div>
       <div class="panel" id="pnlArs" hidden>
         <div class="panel-t"><span>Arsenale</span></div>
@@ -1146,7 +1186,7 @@ body.bloccato{overflow:hidden}
 
 <script>
 "use strict";
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.8.0";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -1628,7 +1668,7 @@ const DEFAULT = () => ({
   limits:[], limitNote:"",
   cycleStart:null, deloadWeeks:[], deloadAsked:[], blocchiVisti:[],
   mant:false, mantWeeks:[], voceOn:true, emomOn:false,
-  patto:null, patti:[], libera:null, schede:[], slot:{},
+  patto:null, patti:[], libera:null, schede:[], slot:{}, sospesa:null,
   salute:{on:false, inNome:"Peso da Salute", outNome:"Allenamento Risveglio"},
   pa:0, paTot:0, skills:[], owned:["pugni","tuta","nessuno","niente"],
   equip:{arma:"pugni", armatura:"tuta", artefatto:"nessuno", titolo:"niente"},
@@ -1762,6 +1802,19 @@ function currentDayIdx(){
   const s = sched()[dowIndex()];
   return s === null ? nextTrainingDay() : s;
 }
+/* Data reale di un giorno della settimana corrente. Serviva questa: la
+   spunta del piano confrontava ogni riga con la data di oggi, quindi
+   nessun allenamento passato poteva mai risultare fatto. */
+function isoSettimana(i, offset){
+  const oggi = new Date(todayISO()+"T12:00:00");
+  const lun = new Date(oggi);
+  lun.setDate(lun.getDate() - ((oggi.getDay()+6)%7) + (offset||0)*7);
+  const d = new Date(lun); d.setDate(d.getDate() + i);
+  return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+}
+function fattoIl(iso){ return logPiano().some(l=>l.d === iso); }
+function liberoIl(iso){ return S.log.some(l=>l.d === iso && l.lib); }
+
 function nextTrainingDay(){
   for(let i=1;i<=7;i++){ const s=sched()[(dowIndex()+i)%7]; if(s!==null) return s; }
   return 0;
@@ -1903,10 +1956,50 @@ function candidati(o, day){
 function totalSets(day){ return activeEx(day).length * setsOf(day); }
 function adaptedCount(day){ return activeEx(day).filter(o=>o.ex.adapted).length; }
 
+/* Una sessione aperta e non chiusa veniva buttata via al cambio di giorno,
+   perche' la chiave contiene la data: dodici serie fatte davvero sparivano
+   senza lasciare traccia. Adesso viene messa da parte e l'app la ripropone. */
+function serieAperte(cur){
+  return Object.keys((cur && cur.done) || {}).reduce((a,k)=>a + cur.done[k].length, 0);
+}
 function ensureSession(dayIdx){
   const k = sessionKey(dayIdx);
-  if(S.cur.key !== k){ S.cur = {key:k, done:{}}; }
+  if(S.cur.key === k) return;
+  if(S.cur.key && serieAperte(S.cur) > 0 && !S.sospesa){
+    const idx = +S.cur.key.split("|")[2];
+    let nome = "";
+    try { nome = dayObj(idx).n; } catch(e){}
+    S.sospesa = {key:S.cur.key, done:S.cur.done, t0:S.cur.t0, reps:S.cur.reps,
+                 swap:S.cur.swap, fb:S.cur.fb, idx:idx, n:nome,
+                 serie:serieAperte(S.cur), d:S.cur.key.split("|")[3]};
+  }
+  S.cur = {key:k, done:{}};
 }
+
+function controllaSospesa(){
+  const sp = S.sospesa;
+  if(!sp || !sp.serie) return false;
+  const gg = Math.max(0, daysBetween(sp.d, todayISO()));
+  const quando = gg === 0 ? "oggi" : gg === 1 ? "ieri" : GIORNI[(new Date(sp.d+"T12:00:00").getDay()+6)%7];
+  sysBox('<div class="stt">Sessione lasciata aperta</div><div class="rule"></div>'
+    + '<div style="text-align:center"><div class="lbl">' + esc(quando) + '</div>'
+    + '<div class="lvlnum" style="font-size:56px;margin:6px 0 2px">'+sp.serie+'</div>'
+    + '<div class="lbl">serie segnate su ' + esc(sp.n || "una sessione") + '</div></div>'
+    + '<div class="extip" style="margin-top:14px">Le avevi completate ma non hai chiuso la sessione, quindi non è mai finita nel registro. '
+    + 'Chiudendola ora viene registrata <strong style="color:var(--txt)">con la data di oggi</strong>: il registro dice quando ti sei mosso, non quando avresti dovuto.</div>'
+    + '<button class="btn gold" style="margin-top:16px" onclick="chiudiSospesa()">Chiudi e registra</button>'
+    + '<button class="btn ghost" style="margin-top:8px" onclick="scartaSospesa()">Scarta</button>');
+  return true;
+}
+window.chiudiSospesa = function(){
+  const sp = S.sospesa; if(!sp){ closeOv(); return; }
+  S.sospesa = null;
+  S.cur = {key: sessionKey(sp.idx), done: sp.done, t0: sp.t0 || Date.now(),
+           reps: sp.reps, swap: sp.swap, fb: sp.fb};
+  closeOv(); save();
+  finishSession();
+};
+window.scartaSospesa = function(){ S.sospesa = null; closeOv(); save(); render(); };
 function doneCount(dayIdx){
   const d = dayObj(dayIdx===undefined ? currentDayIdx() : dayIdx);
   return activeEx(d).reduce((a,o)=>a+((S.cur.done[o.i]||[]).length), 0);
@@ -3098,6 +3191,13 @@ function controllaBlocco(){
 }
 
 function paintPlan(){
+  const sv = $("segVista");
+  if(sv){
+    document.querySelectorAll("#segVista button").forEach(b=>b.classList.toggle("on", b.dataset.v === vistaPiano));
+    $("weekList").hidden = vistaPiano !== "sett";
+    $("meseBox").hidden  = vistaPiano !== "mese";
+    if(vistaPiano === "mese") paintMese();
+  }
   const pm = $("pnlMant");
   if(pm){
     pm.hidden = !S.mant;
@@ -3124,7 +3224,8 @@ function paintPlan(){
     if(s === null) return '<div class="day rest"><div class="dnum">'+w+'</div><div class="dbody"><div class="dttl">Recupero</div><div class="dmeta">'+esc(REST_LABEL[i])+'</div></div></div>';
     const d = dayObj(s);
     const key = sessionKey(s);
-    const logged = S.log.some(l=>l.d===todayISO() && l.n===d.n);
+    const giorno = isoSettimana(i);
+    const logged = fattoIl(giorno);
     const isDone = logged || (S.cur.key===key && doneCount(s)>=totalSets(d));
     const na = adaptedCount(d);
     return '<button class="day'+(i===today?' today':'')+(isDone?' done':'')+'" onclick="openDay('+s+')">'
@@ -3134,6 +3235,122 @@ function paintPlan(){
       + '<div class="chk">✓</div></button>';
   }).join("");
 }
+
+/* ---------- 7f. CALENDARIO MENSILE -------------------------
+   La settimana corrente dice cosa fare adesso; il mese dice se ti
+   stai allenando davvero. Sono due domande diverse e meritano due
+   viste diverse.                                              */
+let vistaPiano = "sett", meseOff = 0;
+const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
+              "luglio","agosto","settembre","ottobre","novembre","dicembre"];
+
+function isoDi(d){ return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+// Prima di questa data non ha senso segnare in rosso: l'app non c'era.
+function primoGiorno(){
+  const date = [];
+  if(S.log.length) date.push(S.log[0].d);
+  if(S.cycleStart) date.push(S.cycleStart);
+  if(S.weights.length) date.push(S.weights[0].d);
+  return date.length ? date.sort()[0] : todayISO();
+}
+function statoGiorno(iso){
+  const dow = (new Date(iso+"T12:00:00").getDay()+6)%7;
+  const idx = sched()[dow];
+  const oggi = todayISO();
+  if(fattoIl(iso)) return {c:"ok", idx:idx, fatto:1};
+  if(liberoIl(iso)) return {c:"lib", idx:idx, fatto:1};
+  if(idx === null) return {c:"rip", idx:null, fatto:0};
+  if(iso > oggi) return {c:"futuro", idx:idx, fatto:0};
+  if(iso < primoGiorno()) return {c:"", idx:idx, fatto:0};
+  return {c:"ko", idx:idx, fatto:0};
+}
+
+window.cambiaMese = function(d){
+  const nuovo = meseOff + d;
+  if(nuovo > 0) return;
+  meseOff = nuovo; paintMese();
+};
+window.setVista = function(v){ vistaPiano = v; if(v === "sett") meseOff = 0; paintPlan(); };
+
+function paintMese(){
+  const box = $("meseBox"); if(!box) return;
+  const oggiD = new Date(todayISO()+"T12:00:00");
+  const base = new Date(oggiD.getFullYear(), oggiD.getMonth() + meseOff, 1);
+  const anno = base.getFullYear(), mese = base.getMonth();
+  const giorni = new Date(anno, mese+1, 0).getDate();
+  const partenza = (base.getDay()+6)%7;
+
+  let celle = "";
+  for(let i=0;i<partenza;i++) celle += '<div class="cd vuoto"></div>';
+  let fatti = 0, previsti = 0, libere = 0, run = 0, runMax = 0;
+  for(let g=1; g<=giorni; g++){
+    const iso = isoDi(new Date(anno, mese, g));
+    const st = statoGiorno(iso);
+    if(st.c === "ok"){ fatti++; }
+    if(st.c === "lib"){ libere++; }
+    if(st.c === "ok" || st.c === "ko") previsti++;
+    if(st.fatto){ run++; runMax = Math.max(runMax, run); } else if(st.c !== "rip") run = 0;
+    celle += '<button class="cd '+st.c+(iso===todayISO()?" oggi":"")+'" onclick="giornoDettaglio(\''+iso+'\')"'
+      + ' aria-label="'+g+' '+MESI[mese]+(st.c==="ok"?", allenamento fatto":st.c==="lib"?", seduta libera":st.c==="ko"?", previsto e saltato":st.c==="rip"?", riposo":"")+'">'
+      + g + '</button>';
+  }
+
+  const pc = previsti ? Math.round(fatti/previsti*100) : 0;
+  box.innerHTML = '<div class="mnav">'
+    + '<button onclick="cambiaMese(-1)" aria-label="Mese precedente">‹</button>'
+    + '<b>'+MESI[mese]+' '+anno+'</b>'
+    + '<button onclick="cambiaMese(1)"'+(meseOff>=0?' disabled':'')+' aria-label="Mese successivo">›</button>'
+    + '</div>'
+    + '<div class="calm">' + ["L","M","M","G","V","S","D"].map(x=>'<div class="dow">'+x+'</div>').join("") + celle + '</div>'
+    + '<div class="grid3" style="margin-top:14px">'
+    + '<div class="cell"><div class="lbl">Fatti</div><div class="big mono">'+fatti+'</div></div>'
+    + '<div class="cell"><div class="lbl">Previsti</div><div class="big mono">'+previsti+'</div></div>'
+    + '<div class="cell"><div class="lbl">Aderenza</div><div class="big mono" style="color:'
+    + (pc>=80?"var(--ok)":pc>=55?"var(--gold)":"var(--crit)")+'">'+pc+'%</div></div></div>'
+    + '<div class="mlegenda">'
+    + '<span style="color:var(--ok)"><i style="background:color-mix(in srgb, var(--ok) 24%, transparent)"></i>fatto</span>'
+    + '<span style="color:var(--crit)"><i style="background:color-mix(in srgb, var(--crit) 13%, transparent)"></i>saltato</span>'
+    + (libere ? '<span style="color:var(--shadow)"><i style="background:color-mix(in srgb, var(--shadow) 20%, transparent)"></i>libera</span>' : '')
+    + '<span style="color:var(--dimmer)"><i></i>riposo</span></div>'
+    + '<div class="extip" style="margin:10px 0 0">'
+    + (runMax > 1 ? 'Serie più lunga del mese: <strong style="color:var(--txt)">'+runMax+' giorni di fila</strong>. ' : '')
+    + (libere ? libere+' sedut'+(libere===1?'a libera':'e libere')+' oltre al piano. ' : '')
+    + 'Tocca un giorno per vedere cosa hai fatto o per recuperarlo.</div>';
+}
+
+window.giornoDettaglio = function(iso){
+  const st = statoGiorno(iso);
+  const righe = S.log.filter(l=>l.d === iso);
+  const w = S.weights.find(x=>x.d === iso), gv = (S.waist||[]).find(x=>x.d === iso);
+  const dow = (new Date(iso+"T12:00:00").getDay()+6)%7;
+  const futuro = iso > todayISO();
+  let corpo = "";
+  if(righe.length){
+    corpo = righe.map(l=>'<div style="border-left:2px solid '+(l.lib?"var(--shadow)":"var(--ok)")+';padding:7px 0 7px 11px;margin-bottom:9px">'
+      + '<div style="font-family:\'Chakra Petch\';font-weight:600;font-size:14px">'+esc(l.n)+'</div>'
+      + '<div class="lbl mono" style="margin-top:3px">'+l.s+' serie · +'+l.xp+' XP'+(l.ms?' · '+durata(l.ms):'')+(l.lib?' · seduta libera':'')+'</div>'
+      + (l.nota ? '<div class="lognota">'+esc(l.nota)+'</div>' : '')+'</div>').join("");
+  } else if(futuro){
+    corpo = '<div class="extip" style="margin:0">Giorno futuro. '
+      + (st.idx !== null ? 'In programma: <strong style="color:var(--txt)">'+esc(dayObj(st.idx).n)+'</strong>.' : 'Riposo previsto.')+'</div>';
+  } else if(st.idx === null){
+    corpo = '<div class="extip" style="margin:0">'+esc(REST_LABEL[dow] || "Riposo")+'. Nessuna sessione registrata, ed è così che doveva andare.</div>';
+  } else {
+    corpo = '<div class="extip" style="margin:0">Era previsto <strong style="color:var(--txt)">'+esc(dayObj(st.idx).n)+'</strong> e non risulta registrato.</div>';
+  }
+  const misure = (w || gv)
+    ? '<div class="rule"></div><div class="lbl">'+(w?w.kg.toFixed(1)+' kg':'')+(w&&gv?' · ':'')+(gv?gv.cm.toFixed(1)+' cm':'')+'</div>'
+    : "";
+  const recupera = (!righe.length && !futuro && st.idx !== null)
+    ? '<button class="btn gold" style="margin-top:16px" onclick="recuperaGiorno('+st.idx+')">Recupera questo allenamento</button>'
+      + '<div class="extip" style="margin:8px 0 0;text-align:center">Verrà registrato con la data di oggi.</div>'
+    : "";
+  sysBox('<div class="stt">'+esc(iso.slice(8,10)+"/"+iso.slice(5,7)+"/"+iso.slice(0,4))+'</div><div class="rule"></div>'
+    + '<div class="lbl" style="text-align:center;margin-bottom:12px">'+esc(GIORNI[dow])+'</div>'
+    + corpo + misure + recupera
+    + '<button class="btn ghost" style="margin-top:'+(recupera?"8px":"16px")+'" onclick="closeOv()">Chiudi</button>');
+};
+window.recuperaGiorno = function(idx){ closeOv(); openDay(idx); };
 
 function durata(ms){
   const m = Math.floor(ms/60000), sec = Math.floor(ms/1000)%60;
@@ -4248,7 +4465,7 @@ function go(v){
   window.scrollTo({top:0,behavior:"instant"});
   if(v==="status") paintStatus();
   else if(v==="plan"){ paintCiclo(); paintPlan(); paintConsigli(); paintGiorni(); paintBil(); paintPatto(); paintArs(); }
-  else if(v==="train") paintTrain();
+  else if(v==="train"){ paintTrain(); if(S.sospesa) controllaSospesa(); }
   else if(v==="weight"){ paintWeight(); paintSalute(); paintSpecchio(); }
   else if(v==="log"){ paintLog(); paintPR(); paintMappa(); paintDens(); paintCal(); }
   else if(v==="sheet") paintSheet();
@@ -4956,6 +5173,7 @@ document.querySelectorAll("#segLvl button").forEach(b=>b.addEventListener("click
 }));
 $("btnEdit").addEventListener("click",()=>profileForm(false));
 $("btnTest").addEventListener("click", apriTest);
+document.querySelectorAll("#segVista button").forEach(b=>b.addEventListener("click", ()=>setVista(b.dataset.v)));
 document.querySelectorAll("#segMant button").forEach(b=>b.addEventListener("click", ()=>{
   const on = b.dataset.m === "1";
   if(on === !!S.mant) return;
@@ -5072,7 +5290,8 @@ window.addEventListener("online", ()=>{ if(cloudOK !== false) pushCloud(); });
   else {
     installHint();
     const e = controllaPatto();
-    if(e){ render(); verdettoPatto(e); } else controllaBlocco();
+    if(e){ render(); verdettoPatto(e); }
+    else if(!controllaSospesa()) controllaBlocco();
   }
 })();
 </script>
