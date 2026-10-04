@@ -224,7 +224,7 @@ header{
   background:color-mix(in srgb, var(--void) 92%, transparent);
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line-soft);
-  padding:12px 0 11px;
+  padding:calc(12px + env(safe-area-inset-top)) 0 11px;
 }
 .hd{display:flex;align-items:center;gap:13px}
 /* L'esagono del rango porta il progresso di livello sul proprio bordo:
@@ -560,7 +560,7 @@ body.bloccato{overflow:hidden}
 .guida.on{display:block}
 .guida-in{
   height:100%;height:100dvh;display:flex;flex-direction:column;
-  padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
   max-width:520px;margin:0 auto;
 }
 .g-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
@@ -807,7 +807,7 @@ svg.fig .fb{fill:none;stroke:var(--crit);stroke-width:1}
 .ov{
   position:fixed;inset:0;z-index:80;display:none;
   overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-  padding:18px;padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  padding:18px;padding-top:calc(18px + env(safe-area-inset-top));padding-bottom:calc(24px + env(safe-area-inset-bottom));
   background:color-mix(in srgb, var(--void) 88%, transparent);backdrop-filter:blur(4px);
 }
 .ov.on{display:flex}
@@ -1052,7 +1052,7 @@ html[data-stile="moderno"] .xpbar{border:none;border-radius:99px;height:8px;back
 html[data-stile="moderno"] .xpbar::after{display:none}
 html[data-stile="moderno"] .xpfill{background:var(--grad);border-radius:99px;box-shadow:none}
 /* testata */
-html[data-stile="moderno"] header{background:color-mix(in srgb, var(--void) 88%, transparent);border-bottom:none;padding:10px 0}
+html[data-stile="moderno"] header{background:color-mix(in srgb, var(--void) 88%, transparent);border-bottom:none;padding:calc(10px + env(safe-area-inset-top)) 0 10px}
 html[data-stile="moderno"] .rankwrap{width:52px;height:52px}
 html[data-stile="moderno"] .rankring{display:none}
 html[data-stile="moderno"] .rank{width:48px;height:48px;clip-path:none;border-radius:50%;background:var(--grad);color:#fff;box-shadow:0 6px 14px -6px color-mix(in srgb, var(--sys) 80%, transparent)}
@@ -1480,7 +1480,7 @@ html[data-stile="moderno"] .rie-medaglia{clip-path:none;border-radius:50%}
 
 <script>
 "use strict";
-const APP_VERSION = "2.17.0";
+const APP_VERSION = "2.17.1";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
