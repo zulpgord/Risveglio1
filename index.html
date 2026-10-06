@@ -1480,7 +1480,7 @@ html[data-stile="moderno"] .rie-medaglia{clip-path:none;border-radius:50%}
 
 <script>
 "use strict";
-const APP_VERSION = "2.17.1";
+const APP_VERSION = "2.17.3";
 /* ============================================================
    PROTOCOLLO RISVEGLIO — sistema di allenamento a corpo libero
    ============================================================ */
@@ -2325,13 +2325,20 @@ function figDisegna(svg, F, t){
 }
 // Un solo ciclo di animazione per tutte le figure visibili.
 const FIG_VIVE = new Set();
+const FIG_VEL = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.6 : 1;
 let figRaf = null;
-function figTick(now){
+/* Timer fisso a 25 fps invece di requestAnimationFrame: su iPhone, con il
+   risparmio energetico o da app aggiunta alla Home, rAF puo' rallentare
+   fino a fermarsi; un intervallo continua a girare. Il tempo si legge
+   dall'orologio, quindi un tick saltato non rallenta il movimento. */
+function figTick(){
+  const now = performance.now();
   FIG_VIVE.forEach(svg=>{
     if(!svg.isConnected){ FIG_VIVE.delete(svg); return; }
-    figDisegna(svg, svg.__F, now - svg.__t0);
+    if(svg.getClientRects().length === 0) return;      // nascosta: niente lavoro
+    try { figDisegna(svg, svg.__F, (now - svg.__t0) * FIG_VEL); } catch(e){ FIG_VIVE.delete(svg); }
   });
-  figRaf = FIG_VIVE.size ? requestAnimationFrame(figTick) : null;
+  if(!FIG_VIVE.size){ clearInterval(figRaf); figRaf = null; }
 }
 function figAvvia(){
   document.querySelectorAll("svg.fig:not([data-on])").forEach(svg=>{
@@ -2350,9 +2357,11 @@ function figAvvia(){
     });
     svg.__g.testa = mk("circle", "fh"); svg.__g.testa.setAttribute("r", "5");
     figDisegna(svg, F, 0);
-    if(!matchMedia("(prefers-reduced-motion: reduce)").matches) FIG_VIVE.add(svg);
+    // La dimostrazione e' il contenuto, non una decorazione: anima sempre.
+    // Con "Riduci movimento" attivo va al 60% della velocita'.
+    FIG_VIVE.add(svg);
   });
-  if(FIG_VIVE.size && !figRaf) figRaf = requestAnimationFrame(figTick);
+  if(FIG_VIVE.size && !figRaf) figRaf = setInterval(figTick, 40);
 }
 function figSVG(nome, cls){
   const k = figDi(nome), F = FIG[k];
@@ -2571,7 +2580,7 @@ async function pushCloud(){
 /* ---------- 4. LOGICA DI GIOCO ----------------------------- */
 function sessionKey(dayIdx){ return S.program+"|"+S.level+"|"+dayIdx+"|"+todayISO()+"|"+activeLimits().join(","); }
 function currentDayIdx(){
-  if(S.cur.key){ const p=S.cur.key.split("|"); if(p[3]===todayISO()) return +p[2]; }
+  if(S.cur.key){ const p=S.cur.key.split("|"); if(p[3]===todayISO() && p[0]===S.program && (+p[2] === -1 || PROG[S.program].days[+p[2]])) return +p[2]; }
   const s = sched()[dowIndex()];
   return s === null ? nextTrainingDay() : s;
 }
@@ -2599,7 +2608,7 @@ function dayObj(i){
   if(i === -1) return S.libera || PROG[S.program].days[0];
   const id = S.program !== "ria" && S.slot && S.slot[i];
   if(id){ const sc = (S.schede||[]).find(x=>x.id === id); if(sc) return sc; }
-  return conTempo(ruota(PROG[S.program].days[i]));
+  return conTempo(ruota(PROG[S.program].days[i] || PROG[S.program].days[0]));
 }
 /* Quanto tempo hai oggi. "Rapida" tiene i primi esercizi e al massimo due
    serie; "media" toglie una serie. Dopo una seduta con dolore alto la
