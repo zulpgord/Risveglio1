@@ -848,6 +848,16 @@ svg.fig .fb{fill:none;stroke:var(--crit);stroke-width:1}
     linear-gradient(90deg,transparent,var(--sys),transparent) 0 100%/100% 1px no-repeat;
   opacity:.85;
 }
+/* ---------- guida all'app ---------- */
+.tour-ic{font-size:42px;text-align:center;line-height:1;margin:4px 0 10px}
+.tour-t{font-size:18px;font-weight:700;text-align:center;color:var(--txt);margin-bottom:8px}
+.tour-d{font-size:13.5px;color:var(--dim);line-height:1.55}
+.tour-d ul{margin:8px 0 0;padding-left:18px}.tour-d li{margin:4px 0}
+.tour-d b{color:var(--sys);font-weight:600}
+.tour-dots{display:flex;justify-content:center;gap:6px;margin:16px 0 14px}
+.tour-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.tour-dots i.on{background:var(--sys);width:18px;border-radius:4px}
+.tour-az{display:flex;gap:8px}.tour-az .btn{flex:1}
 /* Lettering d'impatto: condensato, inclinato, con doppio contorno. */
 /* ---------- salita di livello ---------- */
 .lvup{display:grid;place-items:center;padding:2px 0}
@@ -1419,6 +1429,7 @@ html[data-stile="moderno"] .rie-medaglia{clip-path:none;border-radius:50%}
         <div class="lbl" style="margin-top:8px" id="testRiep"></div>
         <div class="lbl" style="margin-top:14px" id="profRiep"></div>
         <button class="btn ghost sm" id="btnEdit" style="width:100%;margin-top:8px">Modifica profilo</button>
+        <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="apriTour(false)">Guida all'app</button>
       </div>
 
       <div class="panel">
@@ -7023,6 +7034,50 @@ function installHint(){
 }
 window.addEventListener("online", ()=>{ if(cloudOK !== false) pushCloud(); });
 
+/* ---------- 12. GUIDA ALL'APP ------------------------------
+   Al primo avvio spiega cosa fa il Protocollo prima di chiedere il profilo;
+   dal Profilo si riapre quando si vuole. */
+const TOUR = [
+  {ic:"⚔️", t:"Benvenuto nel Protocollo Risveglio",
+   d:"Un allenatore tascabile che trasforma l'allenamento a corpo libero in un percorso a livelli: ogni sessione ti dà XP, alza le statistiche e ti fa salire di rango, da E fino a S.<ul><li>Funziona anche <b>senza connessione</b></li><li>I dati restano <b>sul tuo dispositivo</b></li><li>Nessun attrezzo obbligatorio</li></ul>"},
+  {ic:"🧭", t:"Il tuo programma",
+   d:"Dopo questa guida crei il profilo e scegli l'obiettivo:<ul><li><b>Dimagrire</b>, <b>Potenziare</b>, <b>Misto</b> o <b>Riabilitare</b></li><li>Difficoltà <b>E · Base</b>, <b>C · Medio</b> o <b>S · Élite</b></li><li>Il <b>test di valutazione</b> e le <b>limitazioni fisiche</b> adattano gli esercizi a te</li></ul>Puoi cambiare tutto in qualsiasi momento dal Profilo."},
+  {ic:"☀️", t:"Oggi",
+   d:"La schermata di partenza: ti mostra la <b>missione del giorno</b>, la tua settimana, la streak e il peso. Tocca <b>Inizia</b> e sei già in allenamento."},
+  {ic:"🏋️", t:"Allena · sessione guidata",
+   d:"La <b>sessione guidata</b> ti accompagna serie per serie: spiega l'esercizio, fa partire il recupero e, se attivi la voce, ti parla così il telefono può restare a terra.<ul><li>Correggi le ripetizioni con <b>−1 / +1</b>: il piano segue quello che fai davvero</li><li>Riscaldamento e defaticamento inclusi</li></ul>"},
+  {ic:"📅", t:"Piano",
+   d:"Il calendario del ciclo, in vista settimana o mese, con le <b>sfide di 28 giorni</b>, l'aderenza per giorno e le regole del protocollo. Quando serve una pausa passa al ritmo <b>Mantenimento</b>."},
+  {ic:"⚖️", t:"Peso e corpo",
+   d:"Registra peso e girovita: l'app calcola la media a 7 giorni, la variazione a 30 e la proiezione verso l'obiettivo. Consiglio: pesati appena sveglio e misura il girovita una volta a settimana."},
+  {ic:"📈", t:"Progressi",
+   d:"Record personali, registro delle sessioni, traguardi e il <b>diario del dolore</b> per ascoltare il corpo. Da qui <b>esporti e importi il backup</b>: fallo ogni tanto, è l'unico modo per non perdere i dati se cambi telefono."},
+  {ic:"✨", t:"Profilo e crescita",
+   d:"Le statistiche <b>FOR · RES · AGI · VOL</b> crescono con gli esercizi che fai. Con i <b>punti abilità</b> sblocchi nodi dell'albero (ad esempio la voce del Sistema) e l'equipaggiamento cambia il tuo aspetto.<br><br>Tutto pronto: crea il tuo profilo e inizia il risveglio."}
+];
+let tourI = 0, tourPrimo = false;
+window.apriTour = function(primo){ tourI = 0; tourPrimo = !!primo; dipingiTour(); };
+function dipingiTour(){
+  const p = TOUR[tourI], ult = tourI === TOUR.length-1;
+  sysBox('<div class="stt">Guida · '+(tourI+1)+' di '+TOUR.length+'</div><div class="rule"></div>'
+    + '<div class="tour-ic" aria-hidden="true">'+p.ic+'</div>'
+    + '<div class="tour-t">'+p.t+'</div><div class="tour-d">'+p.d+'</div>'
+    + '<div class="tour-dots">'+TOUR.map((_,k)=>'<i class="'+(k===tourI?'on':'')+'"></i>').join("")+'</div>'
+    + '<div class="tour-az">'
+    + (tourI ? '<button class="btn ghost" onclick="passoTour(-1)">Indietro</button>' : '')
+    + '<button class="btn '+(ult?'gold':'')+'" onclick="passoTour(1)">'+(ult?(tourPrimo?'Crea il profilo':'Chiudi'):'Avanti')+'</button></div>'
+    + (ult ? '' : '<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="fineTour()">Salta la guida</button>'));
+}
+window.passoTour = function(d){
+  tourI += d;
+  if(tourI >= TOUR.length) return fineTour();
+  dipingiTour();
+};
+window.fineTour = function(){
+  closeOv();
+  if(tourPrimo && !S.name) profileForm(true);
+};
+
 (async function init(){
   setSync("wait","Carico");
   await loadState();
@@ -7031,7 +7086,7 @@ window.addEventListener("online", ()=>{ if(cloudOK !== false) pushCloud(); });
   render();
   $("appVer").textContent = "Protocollo Risveglio · v" + APP_VERSION + (standalone ? " · file unico" : " · file unico");
   setSync("on", "Pronto");
-  if(!S.name) profileForm(true);
+  if(!S.name) apriTour(true);
   else {
     installHint();
     const e = controllaPatto();
